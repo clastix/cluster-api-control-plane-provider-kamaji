@@ -1,0 +1,36 @@
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/clastix/cluster-api-control-plane-provider-kamaji)
+  goheader:
+    template: |-
+      Copyright 2023 Clastix Labs
+      SPDX-License-Identifier: Apache-2.0
+
+issues:
+  max-issues-per-linter: 0
+
+linters:
+  disable:
+    - paralleltest
+    - testpackage
+    - gomoddirectives
+    - lll
+    - depguard
+    - exhaustruct
+    - gochecknoglobals # Operator-SDK test suite is based on global variables
+    - gochecknoinits # Operator-SDK is based on init functions
+    # deprecated linters
+    - scopelint
+    - exhaustivestruct
+    - deadcode
+    - golint
+    - interfacer
+    - structcheck
+    - varcheck
+    - nosnakecase
+    - ifshort
+    - maligned
+  enable-all: true
