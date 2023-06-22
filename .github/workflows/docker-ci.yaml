@@ -16,7 +16,6 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            quay.io/${{ github.repository }}
             docker.io/${{ github.repository }}
           tags: |
             type=semver,pattern={{raw}}
@@ -42,13 +41,6 @@ jobs:
           echo "Status:    ${{ steps.buildx.outputs.status }}"
           echo "Flags:     ${{ steps.buildx.outputs.flags }}"
           echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
-
-      - name: Login to quay.io Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: quay.io
-          username: ${{ github.repository_owner }}+github
-          password: ${{ secrets.BOT_QUAY_IO }}
 
       - name: Login to docker.io Container Registry
         uses: docker/login-action@v1
