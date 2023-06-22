@@ -28,8 +28,8 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# clastix/cluster-api-control-plane-provider-kamaji-bundle:$VERSION and clastix/cluster-api-control-plane-provider-kamaji-catalog:$VERSION.
-IMAGE_TAG_BASE ?= clastix/cluster-api-control-plane-provider-kamaji
+# docker.io/clastix/cluster-api-control-plane-provider-kamaji-bundle:$VERSION and docker.io/clastix/cluster-api-control-plane-provider-kamaji-catalog:$VERSION.
+IMAGE_TAG_BASE ?= docker.io/clastix/cluster-api-control-plane-provider-kamaji
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -47,7 +47,7 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 endif
 
 # Image URL to use all building/pushing image targets
-IMG ?= clastix/cluster-api-control-plane-provider-kamaji:$(VERSION)
+IMG ?= docker.io/clastix/cluster-api-control-plane-provider-kamaji:$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.25.0
 
@@ -114,7 +114,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 .PHONY: release
 release: manifests kustomize ## Create the single YAML manifest.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default > config/install.yaml
+	$(KUSTOMIZE) build config/default > config/control-plane-components.yaml
 
 ##@ Build
 
