@@ -11,13 +11,14 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 
 ## Supported CAPI infrastructure providers
 
-| Infrastructure Provider                                                        | Version       |
-|--------------------------------------------------------------------------------|---------------|
-| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack) | += 0.7.4      |
-| Metal³                                                                         | _In road-map_ |
-| Equinix/Tinkerbell                                                             | _In road-map_ |
-| vSphere                                                                        | _In road-map_ |
-| Nutanix                                                                        | _In road-map_ |
+| Infrastructure Provider                                                                                                               | Version       |
+|---------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| Equinix/Tinkerbell                                                                                                                    | _In road-map_ |
+| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md)) | _+= 0.1.7_    |
+| Metal³                                                                                                                                | _In road-map_ |
+| Nutanix                                                                                                                               | _In road-map_ |
+| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                        | += 0.7.4      |
+| vSphere                                                                                                                               | _In road-map_ |
 
 > Are you looking for further integrations?
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
