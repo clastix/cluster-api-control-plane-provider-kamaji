@@ -61,6 +61,9 @@ spec:
     kubeProxy: { }
   kubelet:
     cgroupfs: systemd
+    preferredAddressTypes:
+    - InternalIP
+    - ExternalIP
   network:
     serviceType: LoadBalancer
   deployment:
