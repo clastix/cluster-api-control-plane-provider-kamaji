@@ -14,8 +14,8 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 | Infrastructure Provider                                                                                                               | Version       |
 |---------------------------------------------------------------------------------------------------------------------------------------|---------------|
 | Equinix/Tinkerbell                                                                                                                    | _In road-map_ |
-| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md)) | _+= 0.1.7_    |
-| Metal³                                                                                                                                | _In road-map_ |
+| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md)) | += 0.1.7      |
+| [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))             | += 1.4.0      |
 | Nutanix                                                                                                                               | _In road-map_ |
 | [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                        | += 0.7.4      |
 | vSphere                                                                                                                               | _In road-map_ |
