@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: namespace
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
     control-plane: controller-manager
   name: kamaji-system
 ---
@@ -18,6 +19,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   labels:
+    cluster.x-k8s.io/provider: kamaji
     cluster.x-k8s.io/v1beta1: v1alpha1
   name: kamajicontrolplanes.controlplane.cluster.x-k8s.io
 spec:
@@ -3741,6 +3743,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: serviceaccount
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-controller-manager
   namespace: kamaji-system
 ---
@@ -3754,6 +3757,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: role
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-leader-election-role
   namespace: kamaji-system
 rules:
@@ -3799,6 +3803,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: clusterrolebinding
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-capi-kamaji-control-plane-role
 rules:
 - apiGroups:
@@ -3830,6 +3835,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
+  labels:
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-manager-role
 rules:
 - apiGroups:
@@ -3910,6 +3917,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: rolebinding
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-leader-election-rolebinding
   namespace: kamaji-system
 roleRef:
@@ -3931,6 +3939,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: clusterrolebinding
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-capi-kamaji-control-plane-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -3951,6 +3960,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: clusterrolebinding
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
   name: capi-kamaji-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -3971,6 +3981,7 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: deployment
     app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    cluster.x-k8s.io/provider: kamaji
     control-plane: controller-manager
   name: capi-kamaji-controller-manager
   namespace: kamaji-system
@@ -3978,12 +3989,14 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      cluster.x-k8s.io/provider: kamaji
       control-plane: controller-manager
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
+        cluster.x-k8s.io/provider: kamaji
         control-plane: controller-manager
     spec:
       containers:
