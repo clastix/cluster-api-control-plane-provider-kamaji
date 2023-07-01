@@ -3904,7 +3904,6 @@ rules:
   - metal3clusters
   verbs:
   - get
-  - watch
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
