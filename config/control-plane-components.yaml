@@ -3904,6 +3904,12 @@ rules:
   verbs:
   - patch
 - apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - packetclusters
+  verbs:
+  - patch
+- apiGroups:
   - kamaji.clastix.io
   resources:
   - tenantcontrolplanes
