@@ -38,6 +38,8 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 		return r.checkMetal3Cluster(ctx, cluster, endpoint, port)
 	case "OpenStackCluster":
 		return r.patchOpenStackCluster(ctx, cluster, endpoint, port)
+	case "PacketCluster":
+		return r.patchPacketCluster(ctx, cluster, endpoint, port)
 	default:
 		return errors.New("unsupported infrastructure provider")
 	}
@@ -45,6 +47,7 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters,verbs=patch
 
+//nolint:dupl
 func (r *KamajiControlPlaneReconciler) patchKubeVirtCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
 	kvc := unstructured.Unstructured{}
 
@@ -104,6 +107,48 @@ func (r *KamajiControlPlaneReconciler) checkMetal3Cluster(ctx context.Context, c
 
 	if controlPlaneEndpoint["port"].(int64) != port { //nolint:forcetypeassert
 		return errors.New("the Metal3 cluster has been provisioned with a mismatching port")
+	}
+
+	return nil
+}
+
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=packetclusters,verbs=patch
+
+//nolint:dupl
+func (r *KamajiControlPlaneReconciler) patchPacketCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
+	packetCluster := unstructured.Unstructured{}
+
+	packetCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
+	packetCluster.SetName(cluster.Spec.InfrastructureRef.Name)
+	packetCluster.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
+
+	specPatch, err := json.Marshal(map[string]interface{}{
+		"spec": map[string]interface{}{
+			"controlPlaneEndpoint": map[string]interface{}{
+				"host": endpoint,
+				"port": port,
+			},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal PacketCluster spec patch")
+	}
+
+	if err = r.client.Patch(ctx, &packetCluster, client.RawPatch(types.MergePatchType, specPatch)); err != nil {
+		return errors.Wrap(err, "cannot perform PATCH update for the PacketCluster resource")
+	}
+
+	statusPatch, err := json.Marshal(map[string]interface{}{
+		"status": map[string]interface{}{
+			"ready": true,
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal PacketCluster status patch")
+	}
+
+	if err = r.client.Status().Patch(ctx, &packetCluster, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
+		return errors.Wrap(err, "cannot perform PATCH update for the PacketCluster status")
 	}
 
 	return nil
