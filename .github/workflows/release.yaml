@@ -1,0 +1,24 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: tag release
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          token: ${{ secrets.BOT_GITHUB_TOKEN }}
+          files: |
+            config/control-plane-components.yaml
+            config/metadata.yaml
