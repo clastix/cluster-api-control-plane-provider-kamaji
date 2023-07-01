@@ -3888,12 +3888,14 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - kubevirtclusters
+  - packetclusters
   verbs:
   - patch
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
   - kubevirtclusters/status
+  - packetclusters/status
   verbs:
   - patch
 - apiGroups:
@@ -3907,18 +3909,6 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - openstackclusters
-  verbs:
-  - patch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - packetclusters
-  verbs:
-  - patch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - packetclusters/status
   verbs:
   - patch
 - apiGroups:

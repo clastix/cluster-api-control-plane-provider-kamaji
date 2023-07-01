@@ -6,6 +6,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"strconv"
 
@@ -33,28 +34,27 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 
 	switch cluster.Spec.InfrastructureRef.Kind {
 	case "KubevirtCluster":
-		return r.patchKubeVirtCluster(ctx, cluster, endpoint, port)
+		return r.patchGenericCluster(ctx, cluster, endpoint, port)
 	case "Metal3Cluster":
 		return r.checkMetal3Cluster(ctx, cluster, endpoint, port)
 	case "OpenStackCluster":
 		return r.patchOpenStackCluster(ctx, cluster, endpoint, port)
 	case "PacketCluster":
-		return r.patchPacketCluster(ctx, cluster, endpoint, port)
+		return r.patchGenericCluster(ctx, cluster, endpoint, port)
 	default:
 		return errors.New("unsupported infrastructure provider")
 	}
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters,verbs=patch
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters;packetclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status;packetclusters/status,verbs=patch
 
-//nolint:dupl
-func (r *KamajiControlPlaneReconciler) patchKubeVirtCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
-	kvc := unstructured.Unstructured{}
+func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
+	infraCluster := unstructured.Unstructured{}
 
-	kvc.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	kvc.SetName(cluster.Spec.InfrastructureRef.Name)
-	kvc.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
+	infraCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
+	infraCluster.SetName(cluster.Spec.InfrastructureRef.Name)
+	infraCluster.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
 
 	specPatch, err := json.Marshal(map[string]interface{}{
 		"spec": map[string]interface{}{
@@ -65,11 +65,11 @@ func (r *KamajiControlPlaneReconciler) patchKubeVirtCluster(ctx context.Context,
 		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "unable to marshal KubeVirtCluster spec patch")
+		return errors.Wrap(err, fmt.Sprintf("unable to marshal %s spec patch", infraCluster.GetKind()))
 	}
 
-	if err = r.client.Patch(ctx, &kvc, client.RawPatch(types.MergePatchType, specPatch)); err != nil {
-		return errors.Wrap(err, "cannot perform PATCH update for the KubeVirtCluster resource")
+	if err = r.client.Patch(ctx, &infraCluster, client.RawPatch(types.MergePatchType, specPatch)); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s resource", infraCluster.GetKind()))
 	}
 
 	statusPatch, err := json.Marshal(map[string]interface{}{
@@ -78,11 +78,11 @@ func (r *KamajiControlPlaneReconciler) patchKubeVirtCluster(ctx context.Context,
 		},
 	})
 	if err != nil {
-		return errors.Wrap(err, "unable to marshal KubeVirtCluster status patch")
+		return errors.Wrap(err, fmt.Sprintf("unable to marshal %s status patch", infraCluster.GetKind()))
 	}
 
-	if err = r.client.Status().Patch(ctx, &kvc, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
-		return errors.Wrap(err, "cannot perform PATCH update for the KubeVirtCluster status")
+	if err = r.client.Status().Patch(ctx, &infraCluster, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s status", infraCluster.GetKind()))
 	}
 
 	return nil
@@ -108,49 +108,6 @@ func (r *KamajiControlPlaneReconciler) checkMetal3Cluster(ctx context.Context, c
 
 	if controlPlaneEndpoint["port"].(int64) != port { //nolint:forcetypeassert
 		return errors.New("the Metal3 cluster has been provisioned with a mismatching port")
-	}
-
-	return nil
-}
-
-// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=packetclusters,verbs=patch
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=packetclusters/status,verbs=patch
-
-//nolint:dupl
-func (r *KamajiControlPlaneReconciler) patchPacketCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
-	packetCluster := unstructured.Unstructured{}
-
-	packetCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	packetCluster.SetName(cluster.Spec.InfrastructureRef.Name)
-	packetCluster.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
-
-	specPatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"controlPlaneEndpoint": map[string]interface{}{
-				"host": endpoint,
-				"port": port,
-			},
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "unable to marshal PacketCluster spec patch")
-	}
-
-	if err = r.client.Patch(ctx, &packetCluster, client.RawPatch(types.MergePatchType, specPatch)); err != nil {
-		return errors.Wrap(err, "cannot perform PATCH update for the PacketCluster resource")
-	}
-
-	statusPatch, err := json.Marshal(map[string]interface{}{
-		"status": map[string]interface{}{
-			"ready": true,
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "unable to marshal PacketCluster status patch")
-	}
-
-	if err = r.client.Status().Patch(ctx, &packetCluster, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
-		return errors.Wrap(err, "cannot perform PATCH update for the PacketCluster status")
 	}
 
 	return nil
