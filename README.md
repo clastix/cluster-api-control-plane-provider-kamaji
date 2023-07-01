@@ -11,14 +11,15 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 
 ## Supported CAPI infrastructure providers
 
-| Infrastructure Provider                                                                                                               | Version       |
-|---------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| Equinix/Tinkerbell                                                                                                                    | _In road-map_ |
-| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md)) | += 0.1.7      |
-| [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))             | += 1.4.0      |
-| Nutanix                                                                                                                               | _In road-map_ |
-| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                        | += 0.7.4      |
-| vSphere                                                                                                                               | _In road-map_ |
+| Infrastructure Provider                                                                                                                 | Version       |
+|-----------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| [Equinix/Packet](https://github.com/kubernetes-sigs/cluster-api-provider-packet) ([technical considerations](docs/providers-packet.md)) | += v0.7.2     |
+| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md))   | += 0.1.7      |
+| [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))               | += 1.4.0      |
+| Nutanix                                                                                                                                 | _In road-map_ |
+| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                          | += 0.7.4      |
+| Tinkerbell                                                                                                                              | _In road-map_ |
+| vSphere                                                                                                                                 | _In road-map_ |
 
 > Are you looking for further integrations?
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
