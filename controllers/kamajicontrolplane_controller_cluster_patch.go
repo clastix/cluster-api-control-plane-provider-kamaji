@@ -32,10 +32,12 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 	}
 
 	switch cluster.Spec.InfrastructureRef.Kind {
-	case "OpenStackCluster":
-		return r.patchOpenStackCluster(ctx, cluster, endpoint, port)
 	case "KubevirtCluster":
 		return r.patchKubeVirtCluster(ctx, cluster, endpoint, port)
+	case "Metal3Cluster":
+		return r.checkMetal3Cluster(ctx, cluster, endpoint, port)
+	case "OpenStackCluster":
+		return r.patchOpenStackCluster(ctx, cluster, endpoint, port)
 	default:
 		return errors.New("unsupported infrastructure provider")
 	}
@@ -77,6 +79,31 @@ func (r *KamajiControlPlaneReconciler) patchKubeVirtCluster(ctx context.Context,
 
 	if err = r.client.Status().Patch(ctx, &kvc, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
 		return errors.Wrap(err, "cannot perform PATCH update for the KubeVirtCluster status")
+	}
+
+	return nil
+}
+
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metal3clusters,verbs=get;watch
+
+func (r *KamajiControlPlaneReconciler) checkMetal3Cluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
+	mkc := unstructured.Unstructured{}
+
+	mkc.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
+	mkc.SetName(cluster.Spec.InfrastructureRef.Name)
+	mkc.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
+
+	if err := r.client.Get(ctx, types.NamespacedName{Name: mkc.GetName(), Namespace: mkc.GetNamespace()}, &mkc); err != nil {
+		return errors.Wrap(err, "cannot retrieve the Metal3Cluster resource")
+	}
+
+	controlPlaneEndpoint := mkc.Object["spec"].(map[string]interface{})["controlPlaneEndpoint"].(map[string]interface{}) //nolint:forcetypeassert
+	if controlPlaneEndpoint["host"].(string) != endpoint {                                                               //nolint:forcetypeassert
+		return errors.New("the Metal3 cluster has been provisioned with a mismatching host")
+	}
+
+	if controlPlaneEndpoint["port"].(int64) != port { //nolint:forcetypeassert
+		return errors.New("the Metal3 cluster has been provisioned with a mismatching port")
 	}
 
 	return nil
