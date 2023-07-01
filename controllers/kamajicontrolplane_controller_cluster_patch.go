@@ -88,7 +88,7 @@ func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, 
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metal3clusters,verbs=get;watch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metal3clusters,verbs=get
 
 func (r *KamajiControlPlaneReconciler) checkMetal3Cluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
 	mkc := unstructured.Unstructured{}
