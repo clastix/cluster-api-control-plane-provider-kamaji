@@ -59,6 +59,12 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - kubevirtclusters/status
+  verbs:
+  - patch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
   - metal3clusters
   verbs:
   - get
@@ -73,6 +79,12 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - packetclusters
+  verbs:
+  - patch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - packetclusters/status
   verbs:
   - patch
 - apiGroups:

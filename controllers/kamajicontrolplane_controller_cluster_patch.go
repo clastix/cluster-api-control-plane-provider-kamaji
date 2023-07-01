@@ -46,6 +46,7 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status,verbs=patch
 
 //nolint:dupl
 func (r *KamajiControlPlaneReconciler) patchKubeVirtCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
@@ -113,6 +114,7 @@ func (r *KamajiControlPlaneReconciler) checkMetal3Cluster(ctx context.Context, c
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=packetclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=packetclusters/status,verbs=patch
 
 //nolint:dupl
 func (r *KamajiControlPlaneReconciler) patchPacketCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
