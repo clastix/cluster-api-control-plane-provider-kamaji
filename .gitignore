@@ -16,3 +16,6 @@ bin/*
 # vendor/
 
 .idea
+
+# Tilt files.
+.tiltbuild
