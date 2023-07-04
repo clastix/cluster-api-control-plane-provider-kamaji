@@ -4018,7 +4018,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.1.0
+        image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.2.0
         livenessProbe:
           httpGet:
             path: /healthz
