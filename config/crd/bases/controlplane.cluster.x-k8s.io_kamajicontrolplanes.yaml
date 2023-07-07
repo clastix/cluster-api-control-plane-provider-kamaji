@@ -6009,6 +6009,11 @@ spec:
           status:
             description: KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
             properties:
+              externalManagedControlPlane:
+                default: true
+                description: ExternalManagedControlPlane indicates to Cluster API
+                  that the Control Plane is externally managed by Kamaji.
+                type: boolean
               initialized:
                 description: the TenantControlPlane has completed initialization.
                 type: boolean
@@ -6043,6 +6048,7 @@ spec:
                   the control plane machines in the cluster.
                 type: string
             required:
+            - externalManagedControlPlane
             - initialized
             - ready
             - readyReplicas
