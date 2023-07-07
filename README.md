@@ -17,7 +17,7 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 | [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md))   | += 0.1.7      |
 | [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))               | += 1.4.0      |
 | Nutanix                                                                                                                                 | _In road-map_ |
-| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                          | += 0.7.4      |
+| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                          | += 0.8.0      |
 | Tinkerbell                                                                                                                              | _In road-map_ |
 | vSphere                                                                                                                                 | _In road-map_ |
 
