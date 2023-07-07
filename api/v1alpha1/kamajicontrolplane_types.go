@@ -110,6 +110,7 @@ type KamajiControlPlaneStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 
 // KamajiControlPlane is the Schema for the kamajicontrolplanes API.
 type KamajiControlPlane struct {
