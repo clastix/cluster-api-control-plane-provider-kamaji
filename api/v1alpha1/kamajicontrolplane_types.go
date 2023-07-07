@@ -100,7 +100,10 @@ type KamajiControlPlaneStatus struct {
 	UnavailableReplicas int32 `json:"unavailableReplicas"`
 	// Total number of non-terminated Pods targeted by this control plane that have the desired template spec.
 	UpdatedReplicas int32 `json:"updatedReplicas"`
-
+	// ExternalManagedControlPlane indicates to Cluster API that the Control Plane
+	// is externally managed by Kamaji.
+	// +kubebuilder:default=true
+	ExternalManagedControlPlane *bool `json:"externalManagedControlPlane"`
 	// String representing the minimum Kubernetes version for the control plane machines in the cluster.
 	Version string `json:"version"`
 }
