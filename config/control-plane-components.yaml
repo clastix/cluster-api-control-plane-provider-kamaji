@@ -4169,6 +4169,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - awsclusters
+  - hetznerclusters
   - kubevirtclusters
   - nutanixclusters
   - packetclusters
