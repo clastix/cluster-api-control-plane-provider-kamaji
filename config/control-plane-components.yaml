@@ -3920,6 +3920,13 @@ rules:
   verbs:
   - patch
 - apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - vsphereclusters
+  verbs:
+  - get
+  - patch
+- apiGroups:
   - kamaji.clastix.io
   resources:
   - tenantcontrolplanes
