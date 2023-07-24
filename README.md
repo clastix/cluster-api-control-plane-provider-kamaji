@@ -19,7 +19,7 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 | Nutanix                                                                                                                                 | _In road-map_ |
 | [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                          | += 0.8.0      |
 | Tinkerbell                                                                                                                              | _In road-map_ |
-| vSphere                                                                                                                                 | _In road-map_ |
+| [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))      | += 1.7.0      |
 
 > Are you looking for further integrations?
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
