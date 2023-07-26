@@ -86,6 +86,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 				labels = map[string]string{}
 			}
 
+			labels[capiv1beta1.ClusterNameLabel] = cluster.Name
 			labels["kamaji.clastix.io/component"] = "capi"
 			labels["kamaji.clastix.io/secret"] = "ca"
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
@@ -133,6 +134,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 				labels = map[string]string{}
 			}
 
+			labels[capiv1beta1.ClusterNameLabel] = cluster.Name
 			labels["kamaji.clastix.io/component"] = "capi"
 			labels["kamaji.clastix.io/secret"] = "kubeconfig"
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
