@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: docker.io/clastix/cluster-api-control-plane-provider-kamaji
-  newTag: v0.2.1
+  newTag: v0.2.2
