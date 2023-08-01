@@ -98,8 +98,8 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 			labels["kamaji.clastix.io/tcp"] = tcp.Name
 
 			capiCA.Data = map[string][]byte{
-				"tls.crt": crt,
-				"tls.key": key,
+				corev1.TLSCertKey:       crt,
+				corev1.TLSPrivateKeyKey: key,
 			}
 			capiCA.SetLabels(labels)
 
