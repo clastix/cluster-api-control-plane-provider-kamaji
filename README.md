@@ -25,8 +25,17 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
 > workspace channel, or using the **GitHub Discussion** section.
 
-## Supported Kamaji version
+## Compatibility matrix
 
-The Cluster API Kamaji Control Plane provider is expecting to work with any Kamaji installation providing
-the `tenantcontrolplanes.kamaji.clastix.io/v1alpha1` version, starting from
-the [v0.3.0](https://github.com/clastix/kamaji/releases/tag/v0.3.0) release.
+The Control Plane provider has several dependencies, such as Cluster API and Kamaji.
+
+The following compatibility matrix is useful to match them according to the Control Plane provider version you're planning to run.
+
+| CP provider | Cluster API | Kamaji | TCP API version |
+|-------------|-------------|--------|-----------------|
+| v0.2.2      | v1.5.x      | v0.3.2 | `v1alpha1`      |
+| v0.2.1      | v1.5.x      | v0.3.1 | `v1alpha1`      |
+| v0.2.0      | v1.4.x      | v0.3.x | `v1alpha1`      |
+| v0.2.0      | v1.4.x      | v0.3.x | `v1alpha1`      |
+| v0.1.1      | v1.4.x      | v0.3.x | `v1alpha1`      |
+| v0.1.0      | v1.4.x      | v0.3.x | `v1alpha1`      |
