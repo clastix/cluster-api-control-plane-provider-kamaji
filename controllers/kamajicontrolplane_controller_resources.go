@@ -71,6 +71,11 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		_, scopeErr := controllerutil.CreateOrUpdate(ctx, r.client, capiCA, func() error {
+			// Skipping the replication of the Certificate Authority if the Secret is managed by the Kamaji operator
+			if len(capiCA.GetOwnerReferences()) > 0 && capiCA.OwnerReferences[0].Kind == "TenantControlPlane" {
+				return nil
+			}
+
 			crt, found := kamajiCA.Data["ca.crt"]
 			if !found {
 				return errors.New("missing Certificate value from *kamajiv1alpha1.TenantControlPlane CA")
