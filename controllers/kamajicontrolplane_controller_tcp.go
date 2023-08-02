@@ -18,7 +18,7 @@ import (
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
-//nolint:funlen
+//nolint:funlen,gocognit,cyclop
 func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
@@ -85,6 +85,25 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Labels = kcp.Spec.Network.ServiceLabels
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Annotations = kcp.Spec.Network.ServiceAnnotations
 			tcp.Spec.NetworkProfile.CertSANs = kcp.Spec.Network.CertSANs
+			// Ingress
+			if kcp.Spec.Network.Ingress != nil {
+				tcp.Spec.ControlPlane.Ingress = &kamajiv1alpha1.IngressSpec{
+					AdditionalMetadata: kamajiv1alpha1.AdditionalMetadata{
+						Labels:      kcp.Spec.Network.Ingress.ExtraLabels,
+						Annotations: kcp.Spec.Network.Ingress.ExtraAnnotations,
+					},
+					IngressClassName: kcp.Spec.Network.Ingress.ClassName,
+					Hostname:         kcp.Spec.Network.Ingress.Hostname,
+				}
+				// In the case of enabled ingress, adding the FQDN to the CertSANs
+				if tcp.Spec.NetworkProfile.CertSANs == nil {
+					tcp.Spec.NetworkProfile.CertSANs = []string{}
+				}
+
+				tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, kcp.Spec.Network.Ingress.Hostname)
+			} else {
+				tcp.Spec.ControlPlane.Ingress = nil
+			}
 			// Deployment
 			tcp.Spec.ControlPlane.Deployment.NodeSelector = kcp.Spec.Deployment.NodeSelector
 			tcp.Spec.ControlPlane.Deployment.RuntimeClassName = kcp.Spec.Deployment.RuntimeClassName

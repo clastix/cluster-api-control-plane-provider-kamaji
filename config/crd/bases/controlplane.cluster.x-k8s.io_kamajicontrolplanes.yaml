@@ -5861,6 +5861,34 @@ spec:
                     items:
                       type: string
                     type: array
+                  ingress:
+                    description: When specified, the KamajiControlPlane will be reachable
+                      using an Ingress object deployed in the management cluster.
+                    properties:
+                      className:
+                        description: Defines the Ingress Class for the Ingress object.
+                        type: string
+                      extraAnnotations:
+                        additionalProperties:
+                          type: string
+                        description: Defines the extra annotations for the Ingress
+                          object. Useful if you need to define TLS/SSL passthrough,
+                          or other Ingress Controller-specific options.
+                        type: object
+                      extraLabels:
+                        additionalProperties:
+                          type: string
+                        description: Defines the extra labels for the Ingress object.
+                        type: object
+                      hostname:
+                        description: Defines the hostname for the Ingress object.
+                          When using an Ingress object the FQDN is automatically added
+                          to the Certificate SANs.
+                        minLength: 1
+                        type: string
+                    required:
+                    - hostname
+                    type: object
                   serviceAddress:
                     description: This field can be used in case of pre-assigned address,
                       such as a VIP, helping when serviceType is NodePort.

@@ -21,7 +21,25 @@ type ControlPlaneComponent struct {
 	ContainerImageName string `json:"containerImageName,omitempty"`
 }
 
+type IngressComponent struct {
+	// Defines the Ingress Class for the Ingress object.
+	ClassName string `json:"className,omitempty"`
+	// Defines the hostname for the Ingress object.
+	// When using an Ingress object the FQDN is automatically added to the Certificate SANs.
+	// +kubebuilder:required
+	// +kubebuilder:validation:MinLength=1
+	Hostname string `json:"hostname"`
+	// Defines the extra labels for the Ingress object.
+	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
+	// Defines the extra annotations for the Ingress object.
+	// Useful if you need to define TLS/SSL passthrough, or other Ingress Controller-specific options.
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+}
+
 type NetworkComponent struct {
+	// When specified, the KamajiControlPlane will be reachable using an Ingress object
+	// deployed in the management cluster.
+	Ingress *IngressComponent `json:"ingress,omitempty"`
 	// +kubebuilder:default="LoadBalancer"
 	ServiceType kamajiv1alpha1.ServiceType `json:"serviceType,omitempty"`
 	// This field can be used in case of pre-assigned address, such as a VIP,
