@@ -35,13 +35,17 @@ type KamajiControlPlaneReconciler struct {
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
 
 func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop
+	var err error
+
+	var operation string
+
 	now, log := time.Now(), ctrllog.FromContext(ctx)
 
 	log.Info("reconciliation started")
 
 	// Retrieving the KamajiControlPlane instance from the request
 	kcp := kcpv1alpha1.KamajiControlPlane{}
-	if err := r.client.Get(ctx, req.NamespacedName, &kcp); err != nil {
+	if err = r.client.Get(ctx, req.NamespacedName, &kcp); err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("resource may have been deleted")
 
@@ -52,6 +56,21 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
+	// Updating the status of each reconciliation with the potential error status:
+	// this is required to share with the user any potential error coming from Kamaji, or the Provider itself.
+	defer func() {
+		var failureMessage, failureReason string
+
+		if err != nil {
+			failureReason = operation
+			failureMessage = err.Error()
+		}
+
+		_ = r.updateKamajiControlPlane(ctx, &kcp, func() {
+			kcp.Status.FailureMessage = failureMessage
+			kcp.Status.FailureReason = failureReason
+		})
+	}()
 	// The ControlPlane must have an OwnerReference set from the Cluster controller, waiting for this condition:
 	// https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html#relationship-to-other-cluster-api-types
 	if len(kcp.GetOwnerReferences()) == 0 {
@@ -64,20 +83,25 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	cluster.SetName(kcp.GetOwnerReferences()[0].Name)
 	cluster.SetNamespace(kcp.GetNamespace())
 
-	if err := r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
+	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("capiv1beta1.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
 		}
 
+		operation = "GetCluster"
+
 		log.Error(err, "unable to get capiv1beta1.Cluster")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
 	// Reconciling the Kamaji TenantControlPlane resource
-	tcp, err := r.createOrUpdateTenantControlPlane(ctx, cluster, kcp)
-	if err != nil {
+	var tcp *kamajiv1alpha1.TenantControlPlane
+
+	if tcp, err = r.createOrUpdateTenantControlPlane(ctx, cluster, kcp); err != nil {
+		operation = "CreateOrUpdateTenantControlPlane"
+
 		log.Error(err, "unable to create or update the TenantControlPlane instance")
 
 		return ctrl.Result{}, err
@@ -91,10 +115,12 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if len(tcp.Status.ControlPlaneEndpoint) == 0 {
 		log.Info("Control Plane Endpoint is not yet available since unprocessed by Kamaji, enqueuing back")
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	if err = r.patchCluster(ctx, cluster, tcp.Status.ControlPlaneEndpoint); err != nil {
+		operation = "PatchCluster"
+
 		log.Error(err, "cannot patch capiv1beta1.Cluster")
 
 		return ctrl.Result{}, err
@@ -125,6 +151,8 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if err = r.updateKamajiControlPlane(ctx, &kcp, func() {
 		kcp.Status.Initialized = true
 	}); err != nil {
+		operation = "UpdateKamajiControlPlaneAsInitialized"
+
 		log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as initialized")
 
 		return ctrl.Result{}, err
@@ -140,6 +168,8 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		kcp.Status.Version = tcp.Status.Kubernetes.Version.Version
 	})
 	if err != nil {
+		operation = "UpdateKamajiControlPlaneAsReady"
+
 		log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as ready")
 
 		return ctrl.Result{}, err
@@ -151,8 +181,12 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	requeue, err := r.createRequiredResources(ctx, cluster, kcp, tcp)
+	var result ctrl.Result
+
+	result, err = r.createRequiredResources(ctx, cluster, kcp, tcp)
 	if err != nil {
+		operation = "CreateRequiredResources"
+
 		log.Error(err, "unable to satisfy Secrets contract")
 
 		return ctrl.Result{}, err
@@ -160,7 +194,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	log.Info("reconciliation completed", "duration", time.Since(now).String())
 
-	return requeue, nil
+	return result, nil
 }
 
 func (r *KamajiControlPlaneReconciler) updateKamajiControlPlane(ctx context.Context, kcp *kcpv1alpha1.KamajiControlPlane, modifierFn func()) error {
