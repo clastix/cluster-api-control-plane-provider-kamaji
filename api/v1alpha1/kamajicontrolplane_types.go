@@ -104,6 +104,10 @@ type KamajiControlPlaneStatus struct {
 	// is externally managed by Kamaji.
 	// +kubebuilder:default=true
 	ExternalManagedControlPlane *bool `json:"externalManagedControlPlane"`
+	// Share the failed process of the KamajiControlPlane provider which wasn't able to complete the reconciliation for the given resource.
+	FailureReason string `json:"failureReason,omitempty"`
+	// The error message, if available, for the failing reconciliation.
+	FailureMessage string `json:"failureMessage,omitempty"`
 	// String representing the minimum Kubernetes version for the control plane machines in the cluster.
 	Version string `json:"version"`
 }
