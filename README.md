@@ -33,6 +33,7 @@ The following compatibility matrix is useful to match them according to the Cont
 
 | CP provider | Cluster API | Kamaji | TCP API version |
 |-------------|-------------|--------|-----------------|
+| v0.3.0      | v1.5.x      | v0.3.2 | `v1alpha1`      |
 | v0.2.2      | v1.5.x      | v0.3.2 | `v1alpha1`      |
 | v0.2.1      | v1.5.x      | v0.3.1 | `v1alpha1`      |
 | v0.2.0      | v1.4.x      | v0.3.x | `v1alpha1`      |
