@@ -3694,6 +3694,12 @@ spec:
                 default: true
                 description: ExternalManagedControlPlane indicates to Cluster API that the Control Plane is externally managed by Kamaji.
                 type: boolean
+              failureMessage:
+                description: The error message, if available, for the failing reconciliation.
+                type: string
+              failureReason:
+                description: Share the failed process of the KamajiControlPlane provider which wasn't able to complete the reconciliation for the given resource.
+                type: string
               initialized:
                 description: the TenantControlPlane has completed initialization.
                 type: boolean
