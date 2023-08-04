@@ -27,6 +27,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 
 | Infrastructure Provider                                                                                                                 | Version       |
 |-----------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| [AWS](https://github.com/kubernetes-sigs/cluster-api-provider-aws) ([technical considerations](docs/providers-aws.md))                  | += v2.4.0     |
 | [Equinix/Packet](https://github.com/kubernetes-sigs/cluster-api-provider-packet) ([technical considerations](docs/providers-packet.md)) | += v0.7.2     |
 | [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md))   | += 0.1.7      |
 | [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))               | += 1.4.0      |
