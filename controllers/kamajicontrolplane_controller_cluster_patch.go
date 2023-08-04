@@ -5,7 +5,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -16,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
@@ -135,37 +135,30 @@ func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, 
 	infraCluster.SetName(cluster.Spec.InfrastructureRef.Name)
 	infraCluster.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
 
-	specPatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"controlPlaneEndpoint": map[string]interface{}{
-				"host": endpoint,
-				"port": port,
-			},
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to marshal %s spec patch", infraCluster.GetKind()))
+	if err := r.client.Get(ctx, types.NamespacedName{Name: infraCluster.GetName(), Namespace: infraCluster.GetNamespace()}, &infraCluster); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", infraCluster.GetKind()))
 	}
 
-	if err = r.client.Patch(ctx, &infraCluster, client.RawPatch(types.MergePatchType, specPatch)); err != nil {
+	patchHelper, err := patch.NewHelper(&infraCluster, r.client)
+	if err != nil {
+		return errors.Wrap(err, "unable to create patch helper")
+	}
+
+	if err = unstructured.SetNestedMap(infraCluster.Object, map[string]interface{}{
+		"host": endpoint,
+		"port": port,
+	}, "spec", "controlPlaneEndpoint"); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec patch", infraCluster.GetKind()))
+	}
+
+	if patchStatus {
+		if err = unstructured.SetNestedField(infraCluster.Object, true, "status", "ready"); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s status patch", infraCluster.GetKind()))
+		}
+	}
+
+	if err = patchHelper.Patch(ctx, &infraCluster); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s resource", infraCluster.GetKind()))
-	}
-
-	if !patchStatus {
-		return nil
-	}
-
-	statusPatch, err := json.Marshal(map[string]interface{}{
-		"status": map[string]interface{}{
-			"ready": true,
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to marshal %s status patch", infraCluster.GetKind()))
-	}
-
-	if err = r.client.Status().Patch(ctx, &infraCluster, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s status", infraCluster.GetKind()))
 	}
 
 	return nil
@@ -184,14 +177,19 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", gkc.GetKind()))
 	}
 
-	controlPlaneEndpointUn := gkc.Object["spec"].(map[string]interface{})["controlPlaneEndpoint"] //nolint:forcetypeassert
-	if controlPlaneEndpointUn == nil {
+	cpHost, _, err := unstructured.NestedString(gkc.Object, "spec", "controlPlaneEndpoint", "host")
+	if err != nil {
+		return errors.Wrap(err, "cannot extract control plane endpoint host")
+	}
+
+	if cpHost == "" {
 		return *NewUnmanagedControlPlaneAddressError(gkc.GetKind())
 	}
 
-	controlPlaneEndpoint := controlPlaneEndpointUn.(map[string]interface{}) //nolint:forcetypeassert
-
-	cpHost, cpPort := controlPlaneEndpoint["host"].(string), controlPlaneEndpoint["port"].(int64) //nolint:forcetypeassert
+	cpPort, _, err := unstructured.NestedInt64(gkc.Object, "spec", "controlPlaneEndpoint", "port")
+	if err != nil {
+		return errors.Wrap(err, "cannot extract control plane endpoint host")
+	}
 
 	if len(cpHost) == 0 && cpPort == 0 {
 		return *NewUnmanagedControlPlaneAddressError(gkc.GetKind())
@@ -217,17 +215,23 @@ func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context
 	osc.SetName(cluster.Spec.InfrastructureRef.Name)
 	osc.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
 
-	mergePatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"apiServerFixedIP": endpoint,
-			"apiServerPort":    port,
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "unable to marshal OpenStackCluster patch")
+	if err := r.client.Get(ctx, types.NamespacedName{Name: osc.GetName(), Namespace: osc.GetNamespace()}, &osc); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", osc.GetKind()))
 	}
 
-	if err = r.client.Patch(ctx, &osc, client.RawPatch(types.MergePatchType, mergePatch)); err != nil {
+	patchHelper, err := patch.NewHelper(&osc, r.client)
+	if err != nil {
+		return errors.Wrap(err, "unable to create patch helper")
+	}
+
+	if err = unstructured.SetNestedMap(osc.Object, map[string]interface{}{
+		"apiServerFixedIP": endpoint,
+		"apiServerPort":    port,
+	}, "spec"); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec patch", osc.GetKind()))
+	}
+
+	if err = patchHelper.Patch(ctx, &osc); err != nil {
 		return errors.Wrap(err, "cannot perform PATCH update for the OpenStackCluster resource")
 	}
 
