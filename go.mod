@@ -3,7 +3,7 @@ module github.com/clastix/cluster-api-control-plane-provider-kamaji
 go 1.20
 
 require (
-	github.com/clastix/kamaji v0.3.0
+	github.com/clastix/kamaji v0.3.4
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
 	github.com/pkg/errors v0.9.1

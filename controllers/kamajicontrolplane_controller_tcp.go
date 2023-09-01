@@ -41,7 +41,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 				tcp.Spec.NetworkProfile.PodCIDR = podsCIDR.CIDRBlocks[0]
 			}
 			// Replicas
-			tcp.Spec.ControlPlane.Deployment.Replicas = *kcp.Spec.Replicas
+			tcp.Spec.ControlPlane.Deployment.Replicas = kcp.Spec.Replicas
 			// Version
 			tcp.Spec.Kubernetes.Version = fmt.Sprintf("v%s", kcp.Spec.Version)
 			// Kamaji specific options
