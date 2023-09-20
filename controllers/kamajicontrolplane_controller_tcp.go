@@ -65,6 +65,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.ExtraArgs.ControllerManager = kcp.Spec.ControllerManager.ExtraArgs
 			tcp.Spec.ControlPlane.Deployment.ExtraArgs.Scheduler = kcp.Spec.Scheduler.ExtraArgs
 			tcp.Spec.ControlPlane.Deployment.ExtraArgs.APIServer = kcp.Spec.ApiServer.ExtraArgs
+			tcp.Spec.ControlPlane.Deployment.ExtraArgs.Kine = kcp.Spec.Kine.ExtraArgs
 			// Resources
 			if tcp.Spec.ControlPlane.Deployment.Resources == nil {
 				tcp.Spec.ControlPlane.Deployment.Resources = &kamajiv1alpha1.ControlPlaneComponentsResources{}
@@ -73,6 +74,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.Resources.ControllerManager = &kcp.Spec.ControllerManager.Resources
 			tcp.Spec.ControlPlane.Deployment.Resources.Scheduler = &kcp.Spec.Scheduler.Resources
 			tcp.Spec.ControlPlane.Deployment.Resources.APIServer = &kcp.Spec.ApiServer.Resources
+			tcp.Spec.ControlPlane.Deployment.Resources.Kine = &kcp.Spec.Kine.Resources
 			// Container image overrides
 			tcp.Spec.ControlPlane.Deployment.RegistrySettings.ControllerManagerImage = kcp.Spec.ControllerManager.ContainerImageName
 			tcp.Spec.ControlPlane.Deployment.RegistrySettings.SchedulerImage = kcp.Spec.Scheduler.ContainerImageName

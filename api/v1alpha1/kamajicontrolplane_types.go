@@ -21,6 +21,13 @@ type ControlPlaneComponent struct {
 	ContainerImageName string `json:"containerImageName,omitempty"`
 }
 
+// KineComponent allows the customization for the kine component of the control plane.
+// Available only if Kamaji is running using Kine as backing storage.
+type KineComponent struct {
+	ExtraArgs []string                    `json:"extraArgs,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+}
+
 type IngressComponent struct {
 	// Defines the Ingress Class for the Ingress object.
 	ClassName string `json:"className,omitempty"`
@@ -72,6 +79,7 @@ type KamajiControlPlaneSpec struct {
 	ControllerManager ControlPlaneComponent `json:"controllerManager,omitempty"`
 	ApiServer         ControlPlaneComponent `json:"apiServer,omitempty"` //nolint:revive,stylecheck
 	Scheduler         ControlPlaneComponent `json:"scheduler,omitempty"`
+	Kine              KineComponent         `json:"kine,omitempty"`
 	// Configure the Kubelet options, such as the preferred address types, or the expected cgroupfs.
 	// +kubebuilder:default={preferredAddressTypes:{"Hostname","InternalIP","ExternalIP"},cgroupfs:"systemd"}
 	Kubelet kamajiv1alpha1.KubeletSpec `json:"kubelet,omitempty"`
