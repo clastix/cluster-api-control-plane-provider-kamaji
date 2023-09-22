@@ -44,9 +44,17 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.Replicas = kcp.Spec.Replicas
 			// Version
 			tcp.Spec.Kubernetes.Version = fmt.Sprintf("v%s", kcp.Spec.Version)
+			// Kamaji addons and CoreDNS overrides
+			tcp.Spec.Addons = kcp.Spec.Addons.AddonsSpec
+			if kcp.Spec.Addons.CoreDNS != nil {
+				tcp.Spec.Addons.CoreDNS = kcp.Spec.Addons.CoreDNS.AddonSpec
+				tcp.Spec.NetworkProfile.DNSServiceIPs = kcp.Spec.Addons.CoreDNS.DNSServiceIPs
+			} else {
+				tcp.Spec.Addons.CoreDNS = nil
+				tcp.Spec.NetworkProfile.DNSServiceIPs = kcp.Spec.Addons.CoreDNS.DNSServiceIPs
+			}
 			// Kamaji specific options
 			tcp.Spec.DataStore = kcp.Spec.DataStoreName
-			tcp.Spec.Addons = kcp.Spec.Addons
 			tcp.Spec.Kubernetes.AdmissionControllers = kcp.Spec.AdmissionControllers
 			tcp.Spec.ControlPlane.Deployment.RegistrySettings.Registry = kcp.Spec.ContainerRegistry
 			// Volume mounts
