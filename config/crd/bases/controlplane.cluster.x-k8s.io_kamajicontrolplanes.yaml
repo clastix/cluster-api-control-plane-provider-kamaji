@@ -45,6 +45,13 @@ spec:
                       registry and the tag are configurable, the image is hard-coded
                       to `coredns`.
                     properties:
+                      dnsServiceIPs:
+                        default:
+                        - 10.96.0.10
+                        items:
+                          type: string
+                        minItems: 1
+                        type: array
                       imageRepository:
                         description: ImageRepository sets the container registry to
                           pull images from. if not set, the default ImageRepository
