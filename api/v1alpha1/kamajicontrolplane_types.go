@@ -59,13 +59,27 @@ type NetworkComponent struct {
 	CertSANs []string `json:"certSANs,omitempty"` //nolint:tagliatelle
 }
 
+// AddonsSpec defines the enabled addons and their features.
+type AddonsSpec struct {
+	kamajiv1alpha1.AddonsSpec `json:",inline"`
+
+	CoreDNS *CoreDNSAddonSpec `json:"coreDNS,omitempty"` //nolint:tagliatelle
+}
+
+type CoreDNSAddonSpec struct {
+	*kamajiv1alpha1.AddonSpec `json:",inline"`
+	// +kubebuilder:default={"10.96.0.10"}
+	// +kubebuilder:validation:MinItems=1
+	DNSServiceIPs []string `json:"dnsServiceIPs,omitempty"`
+}
+
 // KamajiControlPlaneSpec defines the desired state of KamajiControlPlane.
 type KamajiControlPlaneSpec struct {
 	// The Kamaji DataStore to use for the given TenantControlPlane.
 	// Retrieve the list of the allowed ones by issuing "kubectl get datastores.kamaji.clastix.io".
 	DataStoreName string `json:"dataStoreName"`
 	// The addons that must be managed by Kamaji, such as CoreDNS, kube-proxy, and konnectivity.
-	Addons kamajiv1alpha1.AddonsSpec `json:"addons,omitempty"`
+	Addons AddonsSpec `json:"addons,omitempty"`
 	// List of the admission controllers to configure for the TenantControlPlane kube-apiserver.
 	// By default, no admission controllers are enabled, refer to the desired Kubernetes version.
 	//
