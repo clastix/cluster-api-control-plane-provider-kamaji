@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
@@ -37,8 +38,6 @@ type KamajiControlPlaneReconciler struct {
 func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop
 	var err error
 
-	var operation string
-
 	now, log := time.Now(), ctrllog.FromContext(ctx)
 
 	log.Info("reconciliation started")
@@ -56,21 +55,6 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
-	// Updating the status of each reconciliation with the potential error status:
-	// this is required to share with the user any potential error coming from Kamaji, or the Provider itself.
-	defer func() {
-		var failureMessage, failureReason string
-
-		if err != nil {
-			failureReason = operation
-			failureMessage = err.Error()
-		}
-
-		_ = r.updateKamajiControlPlane(ctx, &kcp, func() {
-			kcp.Status.FailureMessage = failureMessage
-			kcp.Status.FailureReason = failureReason
-		})
-	}()
 	// The ControlPlane must have an OwnerReference set from the Cluster controller, waiting for this condition:
 	// https://cluster-api.sigs.k8s.io/developer/architecture/controllers/control-plane.html#relationship-to-other-cluster-api-types
 	if len(kcp.GetOwnerReferences()) == 0 {
@@ -90,18 +74,32 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{}, nil
 		}
 
-		operation = "GetCluster"
-
 		log.Error(err, "unable to get capiv1beta1.Cluster")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
+	//
+	conditions := kcp.Status.Conditions
+
+	defer func() {
+		deferErr := r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+			kcp.Status.Conditions = conditions
+		})
+
+		if deferErr != nil {
+			log.Error(err, "unable to update kcpv1alpha1.KamajiControlPlane conditions")
+		}
+	}()
 	// Reconciling the Kamaji TenantControlPlane resource
 	var tcp *kamajiv1alpha1.TenantControlPlane
 
-	if tcp, err = r.createOrUpdateTenantControlPlane(ctx, cluster, kcp); err != nil {
-		operation = "CreateOrUpdateTenantControlPlane"
+	TrackConditionType(&conditions, kcpv1alpha1.TenantControlPlaneCreatedConditionType, kcp.Generation, func() error {
+		tcp, err = r.createOrUpdateTenantControlPlane(ctx, cluster, kcp)
 
+		return err
+	})
+
+	if err != nil {
 		log.Error(err, "unable to create or update the TenantControlPlane instance")
 
 		return ctrl.Result{}, err
@@ -112,15 +110,29 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Due to the given for granted concept that Control Plane and Worker nodes are on the same infrastructure,
 	// we have to change the approach and wait for the advertised Control Plane endpoint, since Kamaji is offering a
 	// Managed Kubernetes Service, although running as a regular pod.
-	if len(tcp.Status.ControlPlaneEndpoint) == 0 {
-		log.Info("Control Plane Endpoint is not yet available since unprocessed by Kamaji, enqueuing back")
+	TrackConditionType(&conditions, kcpv1alpha1.TenantControlPlaneAddressReadyConditionType, kcp.Generation, func() error {
+		if len(tcp.Status.ControlPlaneEndpoint) == 0 {
+			err = fmt.Errorf("Control Plane Endpoint is not yet available since unprocessed by Kamaji") //nolint:goerr113,stylecheck
+		}
 
-		return ctrl.Result{}, nil
+		return err
+	})
+	// Treating the missing Control Plane Endpoint error as a sentinel:
+	// there's no need to start the requeue with error logging, the Infrastructure Provider will react once the address
+	// is available and assigned to the managed TenantControlPlane resource.
+	if err != nil {
+		log.Info(fmt.Sprintf("%s, enqueuing back", err.Error()))
+
+		return ctrl.Result{}, nil //nolint:nilerr
 	}
 
-	if err = r.patchCluster(ctx, cluster, tcp.Status.ControlPlaneEndpoint); err != nil {
-		operation = "PatchCluster"
+	TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
+		err = r.patchCluster(ctx, cluster, tcp.Status.ControlPlaneEndpoint)
 
+		return err
+	})
+
+	if err != nil {
 		log.Error(err, "cannot patch capiv1beta1.Cluster")
 
 		return ctrl.Result{}, err
@@ -143,33 +155,40 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if tcp.Status.Kubernetes.Version.Status == nil {
 		log.Info("kcpv1alpha1.KamajiControlPlane is not yet initialized, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, r.updateKamajiControlPlane(ctx, &kcp, func() {
+		return ctrl.Result{Requeue: true}, r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
 			kcp.Status.Initialized = false
 		})
 	}
 	// KamajiControlPlane has been initialized
-	if err = r.updateKamajiControlPlane(ctx, &kcp, func() {
-		kcp.Status.Initialized = true
-	}); err != nil {
-		operation = "UpdateKamajiControlPlaneAsInitialized"
+	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
+		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+			kcp.Status.Initialized = true
+		})
 
+		return err
+	})
+
+	if err != nil {
 		log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as initialized")
 
 		return ctrl.Result{}, err
 	}
 	// Updating KamajiControlPlane ready status, along with scaling values
-	err = r.updateKamajiControlPlane(ctx, &kcp, func() {
-		kcp.Status.Ready = *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady || *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionUpgrading
-		kcp.Status.ReadyReplicas = tcp.Status.Kubernetes.Deployment.ReadyReplicas
-		kcp.Status.Replicas = tcp.Status.Kubernetes.Deployment.Replicas
-		kcp.Status.Selector = metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: kcp.GetLabels()})
-		kcp.Status.UnavailableReplicas = tcp.Status.Kubernetes.Deployment.UnavailableReplicas
-		kcp.Status.UpdatedReplicas = tcp.Status.Kubernetes.Deployment.UpdatedReplicas
-		kcp.Status.Version = tcp.Status.Kubernetes.Version.Version
-	})
-	if err != nil {
-		operation = "UpdateKamajiControlPlaneAsReady"
+	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneReadyConditionType, kcp.Generation, func() error {
+		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+			kcp.Status.Ready = *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady || *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionUpgrading
+			kcp.Status.ReadyReplicas = tcp.Status.Kubernetes.Deployment.ReadyReplicas
+			kcp.Status.Replicas = tcp.Status.Kubernetes.Deployment.Replicas
+			kcp.Status.Selector = metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: kcp.GetLabels()})
+			kcp.Status.UnavailableReplicas = tcp.Status.Kubernetes.Deployment.UnavailableReplicas
+			kcp.Status.UpdatedReplicas = tcp.Status.Kubernetes.Deployment.UpdatedReplicas
+			kcp.Status.Version = tcp.Status.Kubernetes.Version.Version
+		})
 
+		return err
+	})
+
+	if err != nil {
 		log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as ready")
 
 		return ctrl.Result{}, err
@@ -183,10 +202,13 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	var result ctrl.Result
 
-	result, err = r.createRequiredResources(ctx, cluster, kcp, tcp)
-	if err != nil {
-		operation = "CreateRequiredResources"
+	TrackConditionType(&conditions, kcpv1alpha1.KubeadmResourcesCreatedReadyConditionType, kcp.Generation, func() error {
+		result, err = r.createRequiredResources(ctx, cluster, kcp, tcp)
 
+		return err
+	})
+
+	if err != nil {
 		log.Error(err, "unable to satisfy Secrets contract")
 
 		return ctrl.Result{}, err
@@ -197,7 +219,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	return result, nil
 }
 
-func (r *KamajiControlPlaneReconciler) updateKamajiControlPlane(ctx context.Context, kcp *kcpv1alpha1.KamajiControlPlane, modifierFn func()) error {
+func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx context.Context, kcp *kcpv1alpha1.KamajiControlPlane, modifierFn func()) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if err := r.client.Get(ctx, types.NamespacedName{Name: kcp.Name, Namespace: kcp.Namespace}, kcp); err != nil {
 			return err //nolint:wrapcheck
