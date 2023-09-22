@@ -11,6 +11,7 @@ package v1alpha1
 import (
 	apiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -233,6 +234,13 @@ func (in *KamajiControlPlaneStatus) DeepCopyInto(out *KamajiControlPlaneStatus) 
 		in, out := &in.ExternalManagedControlPlane, &out.ExternalManagedControlPlane
 		*out = new(bool)
 		**out = **in
+	}
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]metav1.Condition, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 

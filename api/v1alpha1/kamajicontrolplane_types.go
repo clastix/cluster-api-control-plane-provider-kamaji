@@ -135,7 +135,8 @@ type KamajiControlPlaneStatus struct {
 	// The error message, if available, for the failing reconciliation.
 	FailureMessage string `json:"failureMessage,omitempty"`
 	// String representing the minimum Kubernetes version for the control plane machines in the cluster.
-	Version string `json:"version"`
+	Version    string             `json:"version"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
