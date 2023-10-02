@@ -47,11 +47,16 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			// Kamaji addons and CoreDNS overrides
 			tcp.Spec.Addons = kcp.Spec.Addons.AddonsSpec
 			if kcp.Spec.Addons.CoreDNS != nil {
-				tcp.Spec.Addons.CoreDNS = kcp.Spec.Addons.CoreDNS.AddonSpec
 				tcp.Spec.NetworkProfile.DNSServiceIPs = kcp.Spec.Addons.CoreDNS.DNSServiceIPs
+
+				if kcp.Spec.Addons.CoreDNS.AddonSpec == nil {
+					kcp.Spec.Addons.CoreDNS.AddonSpec = &kamajiv1alpha1.AddonSpec{}
+				}
+
+				tcp.Spec.Addons.CoreDNS = kcp.Spec.Addons.CoreDNS.AddonSpec
 			} else {
 				tcp.Spec.Addons.CoreDNS = nil
-				tcp.Spec.NetworkProfile.DNSServiceIPs = kcp.Spec.Addons.CoreDNS.DNSServiceIPs
+				tcp.Spec.NetworkProfile.DNSServiceIPs = nil
 			}
 			// Kamaji specific options
 			tcp.Spec.DataStore = kcp.Spec.DataStoreName
