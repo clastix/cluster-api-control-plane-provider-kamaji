@@ -7,7 +7,7 @@ type KamajiControlPlaneConditionType string
 
 var (
 	TenantControlPlaneCreatedConditionType      KamajiControlPlaneConditionType = "TenantControlPlaneCreated"
-	TenantControlPlaneAddressReadyConditionType KamajiControlPlaneConditionType = "TenantcontrolPlaneAddressReady"
+	TenantControlPlaneAddressReadyConditionType KamajiControlPlaneConditionType = "TenantControlPlaneAddressReady"
 	InfrastructureClusterPatchedConditionType   KamajiControlPlaneConditionType = "InfrastructureClusterPatched"
 	KamajiControlPlaneInitializedConditionType  KamajiControlPlaneConditionType = "KamajiControlPlaneIsInitialized"
 	KamajiControlPlaneReadyConditionType        KamajiControlPlaneConditionType = "KamajiControlPlaneIsReady"
