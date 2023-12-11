@@ -31,7 +31,24 @@ spec:
     singular: kamajicontrolplane
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: The desired Kubernetes version
+      jsonPath: .spec.version
+      name: Version
+      type: string
+    - description: Check if the Kamaji Control Plane has been initialized
+      jsonPath: .status.initialized
+      name: Initialized
+      type: boolean
+    - description: Check if the Kamaji Control Plane is up and running
+      jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - description: Age
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: KamajiControlPlane is the Schema for the kamajicontrolplanes API.
