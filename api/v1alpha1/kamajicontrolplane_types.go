@@ -156,6 +156,10 @@ type KamajiControlPlaneStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
+//+kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The desired Kubernetes version"
+//+kubebuilder:printcolumn:name="Initialized",type="boolean",JSONPath=".status.initialized",description="Check if the Kamaji Control Plane has been initialized"
+//+kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready",description="Check if the Kamaji Control Plane is up and running"
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
 
 // KamajiControlPlane is the Schema for the kamajicontrolplanes API.
 type KamajiControlPlane struct {
