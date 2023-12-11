@@ -35,7 +35,7 @@ type KamajiControlPlaneReconciler struct {
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kamajicontrolplanes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
 
-func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop
+func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop,gocognit,maintidx
 	var err error
 
 	now, log := time.Now(), ctrllog.FromContext(ctx)
@@ -174,9 +174,8 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, err
 	}
 	// Updating KamajiControlPlane ready status, along with scaling values
-	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneReadyConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
-			kcp.Status.Ready = *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady || *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionUpgrading
 			kcp.Status.ReadyReplicas = tcp.Status.Kubernetes.Deployment.ReadyReplicas
 			kcp.Status.Replicas = tcp.Status.Kubernetes.Deployment.Replicas
 			kcp.Status.Selector = metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: kcp.GetLabels()})
@@ -189,16 +188,18 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	})
 
 	if err != nil {
-		log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as ready")
+		log.Error(err, "unable to report kcpv1alpha1.KamajiControlPlane status")
 
 		return ctrl.Result{}, err
 	}
 	// KamajiControlPlane must be considered ready before replicating required resources
-	if !kcp.Status.Ready {
-		log.Info("kcpv1alpha1.KamajiControlPlane is not yet ready, enqueuing back")
+	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
+		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+			kcp.Status.Initialized = true
+		})
 
-		return ctrl.Result{Requeue: true}, nil
-	}
+		return err
+	})
 
 	var result ctrl.Result
 
@@ -209,7 +210,41 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	})
 
 	if err != nil {
+		if goerrors.Is(err, ErrEnqueueBack) {
+			log.Info(err.Error())
+
+			return ctrl.Result{Requeue: true}, nil
+		}
+
 		log.Error(err, "unable to satisfy Secrets contract")
+
+		return ctrl.Result{}, err
+	}
+
+	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneReadyConditionType, kcp.Generation, func() error {
+		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+			kcp.Status.Ready = *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady || *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionUpgrading
+		})
+
+		if err != nil {
+			return err
+		}
+
+		if !kcp.Status.Ready {
+			return fmt.Errorf("TenantControlPlane in %s status, %w", *tcp.Status.Kubernetes.Version.Status, ErrEnqueueBack)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if goerrors.Is(err, ErrEnqueueBack) {
+			log.Info(err.Error())
+
+			return ctrl.Result{Requeue: true}, nil
+		}
+
+		log.Error(err, "unable to report kcpv1alpha1.KamajiControlPlane readiness")
 
 		return ctrl.Result{}, err
 	}
