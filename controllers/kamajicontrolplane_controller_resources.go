@@ -20,6 +20,8 @@ import (
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 )
 
+var ErrEnqueueBack = errors.New("enqueue back")
+
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
 func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) (ctrl.Result, error) {
@@ -28,7 +30,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 	if secretName := tcp.Status.KubeConfig.Admin.SecretName; len(secretName) == 0 {
 		log.Info("admin kubeconfig still unprocessed by Kamaji, unable to create kubeconfig secret for the workload cluster, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true}, fmt.Errorf("admin kubeconfig still unprocessed by Kamaji, %w", ErrEnqueueBack)
 	}
 
 	if err := r.createOrUpdateKubeconfig(ctx, cluster, kcp, tcp); err != nil {
@@ -40,7 +42,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 	if secretName := tcp.Status.Certificates.CA.SecretName; len(secretName) == 0 {
 		log.Info("CA still unprocessed by Kamaji, unable to create Certificate Authority secret for the workload cluster, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{Requeue: true}, fmt.Errorf("CA still unprocessed by Kamaji, %w", ErrEnqueueBack)
 	}
 
 	if err := r.createOrUpdateCertificateAuthority(ctx, cluster, kcp, tcp); err != nil {
