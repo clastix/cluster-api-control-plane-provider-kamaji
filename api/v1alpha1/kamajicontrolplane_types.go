@@ -125,9 +125,9 @@ type DeploymentComponent struct {
 
 // KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
 type KamajiControlPlaneStatus struct {
-	// the TenantControlPlane has completed initialization.
+	// The TenantControlPlane has completed initialization.
 	Initialized bool `json:"initialized"`
-	// The TenantControlPlane API Server is ready to receive requests.
+	// The Kamaji Control Plane is ready to link Cluster API with the Tenant Control Plane.
 	Ready bool `json:"ready"`
 
 	// Total number of fully running and ready control plane instances.
