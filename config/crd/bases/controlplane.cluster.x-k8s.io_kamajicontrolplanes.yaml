@@ -6185,11 +6185,11 @@ spec:
                   which wasn't able to complete the reconciliation for the given resource.
                 type: string
               initialized:
-                description: the TenantControlPlane has completed initialization.
+                description: The TenantControlPlane has completed initialization.
                 type: boolean
               ready:
-                description: The TenantControlPlane API Server is ready to receive
-                  requests.
+                description: The Kamaji Control Plane is ready to link Cluster API
+                  with the Tenant Control Plane.
                 type: boolean
               readyReplicas:
                 description: Total number of fully running and ready control plane
