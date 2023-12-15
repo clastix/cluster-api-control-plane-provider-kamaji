@@ -4040,7 +4040,10 @@ rules:
   - kubevirtclusters
   - packetclusters
   verbs:
+  - get
+  - list
   - patch
+  - watch
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
@@ -4059,7 +4062,10 @@ rules:
   resources:
   - openstackclusters
   verbs:
+  - get
+  - list
   - patch
+  - watch
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:

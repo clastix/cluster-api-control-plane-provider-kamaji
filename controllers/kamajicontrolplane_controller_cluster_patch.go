@@ -5,7 +5,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -14,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/cluster-api/util/patch"
 )
 
 func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta1.Cluster, hostPort string) error {
@@ -63,7 +62,7 @@ func (r *KamajiControlPlaneReconciler) checkOrPatchVSphereCluster(ctx context.Co
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters;packetclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters;packetclusters,verbs=patch;get;list;watch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status;packetclusters/status,verbs=patch
 
 func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64, patchStatus bool) error {
@@ -73,37 +72,30 @@ func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, 
 	infraCluster.SetName(cluster.Spec.InfrastructureRef.Name)
 	infraCluster.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
 
-	specPatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"controlPlaneEndpoint": map[string]interface{}{
-				"host": endpoint,
-				"port": port,
-			},
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to marshal %s spec patch", infraCluster.GetKind()))
+	if err := r.client.Get(ctx, types.NamespacedName{Name: infraCluster.GetName(), Namespace: infraCluster.GetNamespace()}, &infraCluster); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", infraCluster.GetKind()))
 	}
 
-	if err = r.client.Patch(ctx, &infraCluster, client.RawPatch(types.MergePatchType, specPatch)); err != nil {
+	patchHelper, err := patch.NewHelper(&infraCluster, r.client)
+	if err != nil {
+		return errors.Wrap(err, "unable to create patch helper")
+	}
+
+	if err = unstructured.SetNestedMap(infraCluster.Object, map[string]interface{}{
+		"host": endpoint,
+		"port": port,
+	}, "spec", "controlPlaneEndpoint"); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec patch", infraCluster.GetKind()))
+	}
+
+	if patchStatus {
+		if err = unstructured.SetNestedMap(infraCluster.Object, map[string]interface{}{"ready": true}, "status"); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s status patch", infraCluster.GetKind()))
+		}
+	}
+
+	if err = patchHelper.Patch(ctx, &infraCluster); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s resource", infraCluster.GetKind()))
-	}
-
-	if !patchStatus {
-		return nil
-	}
-
-	statusPatch, err := json.Marshal(map[string]interface{}{
-		"status": map[string]interface{}{
-			"ready": true,
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to marshal %s status patch", infraCluster.GetKind()))
-	}
-
-	if err = r.client.Status().Patch(ctx, &infraCluster, client.RawPatch(types.MergePatchType, statusPatch)); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s status", infraCluster.GetKind()))
 	}
 
 	return nil
@@ -122,9 +114,15 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", gkc.GetKind()))
 	}
 
-	controlPlaneEndpoint := gkc.Object["spec"].(map[string]interface{})["controlPlaneEndpoint"].(map[string]interface{}) //nolint:forcetypeassert
+	cpHost, _, err := unstructured.NestedString(gkc.Object, "spec", "controlPlaneEndpoint", "host")
+	if err != nil {
+		return errors.Wrap(err, "cannot extract control plane endpoint host")
+	}
 
-	cpHost, cpPort := controlPlaneEndpoint["host"].(string), controlPlaneEndpoint["port"].(int64) //nolint:forcetypeassert
+	cpPort, _, err := unstructured.NestedInt64(gkc.Object, "spec", "controlPlaneEndpoint", "port")
+	if err != nil {
+		return errors.Wrap(err, "cannot extract control plane endpoint host")
+	}
 
 	if len(cpHost) == 0 && cpPort == 0 {
 		return NewUnmanagedControlPlaneAddressError(gkc.GetKind())
@@ -141,7 +139,7 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=openstackclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=openstackclusters,verbs=patch;get;list;watch
 
 func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
 	osc := unstructured.Unstructured{}
@@ -150,17 +148,23 @@ func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context
 	osc.SetName(cluster.Spec.InfrastructureRef.Name)
 	osc.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
 
-	mergePatch, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"apiServerFixedIP": endpoint,
-			"apiServerPort":    port,
-		},
-	})
-	if err != nil {
-		return errors.Wrap(err, "unable to marshal OpenStackCluster patch")
+	if err := r.client.Get(ctx, types.NamespacedName{Name: osc.GetName(), Namespace: osc.GetNamespace()}, &osc); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", osc.GetKind()))
 	}
 
-	if err = r.client.Patch(ctx, &osc, client.RawPatch(types.MergePatchType, mergePatch)); err != nil {
+	patchHelper, err := patch.NewHelper(&osc, r.client)
+	if err != nil {
+		return errors.Wrap(err, "unable to create patch helper")
+	}
+
+	if err = unstructured.SetNestedMap(osc.Object, map[string]interface{}{
+		"apiServerFixedIP": endpoint,
+		"apiServerPort":    port,
+	}, "spec"); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec patch", osc.GetKind()))
+	}
+
+	if err = patchHelper.Patch(ctx, &osc); err != nil {
 		return errors.Wrap(err, "cannot perform PATCH update for the OpenStackCluster resource")
 	}
 
