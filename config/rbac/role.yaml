@@ -54,6 +54,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - kubevirtclusters
+  - nutanixclusters
   - packetclusters
   verbs:
   - patch
@@ -61,6 +62,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - kubevirtclusters/status
+  - nutanixclusters/status
   - packetclusters/status
   verbs:
   - patch
