@@ -31,17 +31,18 @@ The Control Plane provider has several dependencies, such as Cluster API and Kam
 
 The following compatibility matrix is useful to match them according to the Control Plane provider version you're planning to run.
 
-| CP provider | Cluster API | Kamaji  | TCP API version |
-|-------------|-------------|---------|-----------------|
-| v0.5.0      | v1.5.x      | ~v0.4.0 | `v1alpha1`      |
-| v0.4.2      | v1.5.x      | ~v0.3.2 | `v1alpha1`      |
-| v0.4.1      | v1.5.x      | ~v0.3.2 | `v1alpha1`      |
-| v0.4.0      | v1.5.x      | ~v0.3.2 | `v1alpha1`      |
-| v0.3.1      | v1.5.x      | ~v0.3.2 | `v1alpha1`      |
-| v0.3.0      | v1.5.x      | ~v0.3.2 | `v1alpha1`      |
-| v0.2.2      | v1.5.x      | ~v0.3.2 | `v1alpha1`      |
-| v0.2.1      | v1.5.x      | v0.3.1  | `v1alpha1`      |
-| v0.2.0      | v1.4.x      | v0.3.x  | `v1alpha1`      |
-| v0.2.0      | v1.4.x      | v0.3.x  | `v1alpha1`      |
-| v0.1.1      | v1.4.x      | v0.3.x  | `v1alpha1`      |
-| v0.1.0      | v1.4.x      | v0.3.x  | `v1alpha1`      |
+| CP provider | Cluster API    | Kamaji  | TCP API version |
+|-------------|----------------|---------|-----------------|
+| v0.6.0      | v1.5.x, v1.6.x | ~v0.4.0 | `v1alpha1`      |
+| v0.5.0      | v1.5.x         | ~v0.4.0 | `v1alpha1`      |
+| v0.4.2      | v1.5.x         | ~v0.3.2 | `v1alpha1`      |
+| v0.4.1      | v1.5.x         | ~v0.3.2 | `v1alpha1`      |
+| v0.4.0      | v1.5.x         | ~v0.3.2 | `v1alpha1`      |
+| v0.3.1      | v1.5.x         | ~v0.3.2 | `v1alpha1`      |
+| v0.3.0      | v1.5.x         | ~v0.3.2 | `v1alpha1`      |
+| v0.2.2      | v1.5.x         | ~v0.3.2 | `v1alpha1`      |
+| v0.2.1      | v1.5.x         | v0.3.1  | `v1alpha1`      |
+| v0.2.0      | v1.4.x         | v0.3.x  | `v1alpha1`      |
+| v0.2.0      | v1.4.x         | v0.3.x  | `v1alpha1`      |
+| v0.1.1      | v1.4.x         | v0.3.x  | `v1alpha1`      |
+| v0.1.0      | v1.4.x         | v0.3.x  | `v1alpha1`      |
