@@ -2,6 +2,14 @@
 
 ## Kamaji Cluster API Control Plane provider
 
+<p align="left">
+  <img src="https://img.shields.io/github/license/clastix/cluster-api-control-plane-provider-kamaji"/>
+  <img src="https://img.shields.io/github/go-mod/go-version/clastix/cluster-api-control-plane-provider-kamaji"/>
+  <img src="https://goreportcard.com/badge/github.com/clastix/kamaji">
+  <a href="https://github.com/clastix/kamaji/releases"><img src="https://img.shields.io/github/v/release/clastix/cluster-api-control-plane-provider-kamaji"/></a>
+  <a href="https://kubernetes.slack.com/archives/C03GLTTMWNN"><img alt="#kamaji on Kubernetes Slack" src="https://img.shields.io/badge/slack-@kubernetes/kamaji-blue.svg?logo=slack"/></a>
+</p>
+
 The Kamaji Control Plane provider implementation of the [Cluster Management API](https://cluster-api.sigs.k8s.io/).
 
 ### 🤔 What is Kamaji?
