@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+//nolint:cyclop
 func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta1.Cluster, hostPort string) error {
 	if cluster.Spec.InfrastructureRef == nil {
 		return errors.New("capiv1beta1.Cluster has no InfrastructureRef")
