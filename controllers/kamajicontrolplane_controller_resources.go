@@ -131,7 +131,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 	kamajiAdminKubeconfig.Namespace = tcp.Namespace
 
 	if err := r.client.Get(ctx, types.NamespacedName{Name: kamajiAdminKubeconfig.Name, Namespace: kamajiAdminKubeconfig.Namespace}, kamajiAdminKubeconfig); err != nil {
-		return errors.Wrap(err, "cannot retrieve source-of-truth for admin kubecofig")
+		return errors.Wrap(err, "cannot retrieve source-of-truth for admin kubeconfig")
 	}
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -147,7 +147,12 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
 			labels["kamaji.clastix.io/tcp"] = tcp.Name
 
-			value, ok := kamajiAdminKubeconfig.Data["admin.conf"]
+			secretKey := "admin.conf"
+			if v, ok := kcp.GetAnnotations()[kamajiv1alpha1.KubeconfigSecretKeyAnnotation]; ok && v != "" {
+				secretKey = v
+			}
+
+			value, ok := kamajiAdminKubeconfig.Data[secretKey]
 			if !ok {
 				return errors.New("missing key from *kamajiv1alpha1.TenantControlPlane admin kubeconfig secret")
 			}
