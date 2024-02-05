@@ -23,6 +23,14 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
 	tcp.Namespace = kcp.GetNamespace()
+	if tcp.Annotations == nil {
+		tcp.Annotations = make(map[string]string)
+	}
+	if kubeconfigSecretKey := kcp.Annotations[kubecofigSecretKeyAnnotation]; kubeconfigSecretKey != "" {
+		tcp.Annotations[kubecofigSecretKeyAnnotation] = kubeconfigSecretKey
+	} else {
+		delete(tcp.Annotations, kubecofigSecretKeyAnnotation)
+	}
 
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		_, scopeErr := controllerutil.CreateOrUpdate(ctx, r.client, tcp, func() error {
