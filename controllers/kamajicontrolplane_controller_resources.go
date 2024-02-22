@@ -74,7 +74,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		_, scopeErr := controllerutil.CreateOrUpdate(ctx, r.client, capiCA, func() error {
 			// Skipping the replication of the Certificate Authority if the Secret is managed by the Kamaji operator
-			if len(capiCA.GetOwnerReferences()) > 0 && capiCA.OwnerReferences[0].Kind == "TenantControlPlane" {
+			if capiCA.Name == kamajiCA.Name {
 				return nil
 			}
 
