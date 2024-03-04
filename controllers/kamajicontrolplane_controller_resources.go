@@ -22,6 +22,8 @@ import (
 
 var ErrEnqueueBack = errors.New("enqueue back")
 
+const kubecofigSecretKeyAnnotation = "kamaji.clastix.io/kubeconfig-secret-key"
+
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
 func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) (ctrl.Result, error) {
@@ -147,7 +149,13 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
 			labels["kamaji.clastix.io/tcp"] = tcp.Name
 
-			value, ok := kamajiAdminKubeconfig.Data["admin.conf"]
+			secretKey := "admin.conf"
+			v, ok := kcp.GetAnnotations()[kubecofigSecretKeyAnnotation]
+			if ok && v != "" {
+				secretKey = v
+			}
+
+			value, ok := kamajiAdminKubeconfig.Data[secretKey]
 			if !ok {
 				return errors.New("missing key from *kamajiv1alpha1.TenantControlPlane admin kubeconfig secret")
 			}
