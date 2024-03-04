@@ -129,7 +129,7 @@ spec:
 
 ## Technical considerations
 
-The Cluster API AWS infrastructure provider supports starting from [v2.4.0](https://github.com/kubernetes-sigs/cluster-api-provider-aws/pull/4438) the ability to disable the Control Plane load balancer.
+The Cluster API AWS infrastructure provider supports starting from [v2.4.0](https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/tag/v2.4.0) the ability to disable the Control Plane load balancer.
 This is required since Kamaji Control Plane provider is taking care of this task.
 
 Once the cluster has been provisioned, you need to install the [AWS Cloud Controller Manager](https://github.com/kubernetes/cloud-provider-aws).
