@@ -10,7 +10,8 @@
         "config",
         "controllers"
       ],
-      "label": "CACPPK"
+      "label": "CACPPK",
+      "additional_docker_build_commands": "USER 65532:65532"
     }
 }
 
