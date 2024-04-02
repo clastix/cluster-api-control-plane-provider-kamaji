@@ -1,4 +1,4 @@
-# Kamaji and AWS
+# Kamaji and Azure
 
 The Kamaji Control Plane provider was able to create an _Azure_ backed Kubernetes cluster by providing Kamaji Control Planes.
 
