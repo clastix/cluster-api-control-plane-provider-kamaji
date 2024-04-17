@@ -60,7 +60,7 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 
 func (r *KamajiControlPlaneReconciler) checkOrPatchVSphereCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
 	if err := r.checkGenericCluster(ctx, cluster, endpoint, port); err != nil {
-		if errors.Is(err, UnmanagedControlPlaneAddressError{}) {
+		if errors.As(err, &UnmanagedControlPlaneAddressError{}) {
 			return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
 		}
 
@@ -134,7 +134,7 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 	cpHost, cpPort := controlPlaneEndpoint["host"].(string), controlPlaneEndpoint["port"].(int64) //nolint:forcetypeassert
 
 	if len(cpHost) == 0 && cpPort == 0 {
-		return NewUnmanagedControlPlaneAddressError(gkc.GetKind())
+		return *NewUnmanagedControlPlaneAddressError(gkc.GetKind())
 	}
 
 	if cpHost != endpoint {

@@ -16,5 +16,5 @@ func NewUnmanagedControlPlaneAddressError(kind string) *UnmanagedControlPlaneAdd
 }
 
 func (u UnmanagedControlPlaneAddressError) Error() string {
-	return fmt.Sprintf("the %s resource is not managaing directly the Control Plane address", u.Kind)
+	return fmt.Sprintf("the %s resource is not directly managing the Control Plane address", u.Kind)
 }
