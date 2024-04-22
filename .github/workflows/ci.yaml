@@ -8,7 +8,7 @@ on:
 
 jobs:
   commit_lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -18,7 +18,7 @@ jobs:
           firstParent: true
   golangci:
     name: lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v3
@@ -27,11 +27,11 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3.0.0
         with:
-          version: v1.53.2
+          version: v1.54.2
           args: --timeout 5m --config .golangci.yml
   diff:
     name: diff
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
         with:
