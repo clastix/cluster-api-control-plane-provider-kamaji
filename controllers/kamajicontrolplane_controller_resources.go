@@ -99,11 +99,13 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
 			labels["kamaji.clastix.io/tcp"] = tcp.Name
 
+			capiCA.SetLabels(labels)
+
 			capiCA.Data = map[string][]byte{
 				corev1.TLSCertKey:       crt,
 				corev1.TLSPrivateKeyKey: key,
 			}
-			capiCA.SetLabels(labels)
+			capiCA.Type = capiv1beta1.ClusterSecretType
 
 			return controllerutil.SetControllerReference(&kcp, capiCA, r.client.Scheme()) //nolint:wrapcheck
 		})
@@ -157,10 +159,12 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 				return errors.New("missing key from *kamajiv1alpha1.TenantControlPlane admin kubeconfig secret")
 			}
 
+			capiAdminKubeconfig.SetLabels(labels)
+
 			capiAdminKubeconfig.Data = map[string][]byte{
 				"value": value,
 			}
-			capiAdminKubeconfig.SetLabels(labels)
+			capiAdminKubeconfig.Type = capiv1beta1.ClusterSecretType
 
 			return controllerutil.SetControllerReference(&kcp, capiAdminKubeconfig, r.client.Scheme()) //nolint:wrapcheck
 		})
