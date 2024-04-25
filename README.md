@@ -34,7 +34,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 | [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))               | += 1.4.0          |
 | [Nutanix](https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix) ([technical considerations](docs/providers-nutanix.md)) | += 1.2.4          |
 | [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack)                                                          | += 0.8.0          |
-| Tinkerbell                                                                                                                              | _In road-map_     |
+| [Tinkerbell](https://github.com/tinkerbell/cluster-api-provider-tinkerbell) ([technical considerations](docs/providers-tinkerbell.md))  | += v0.5.2         |
 | [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))      | += 1.7.0          |
 
 > Are you looking for further integrations?
