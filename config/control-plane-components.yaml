@@ -6642,6 +6642,7 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - tinkerbellclusters
   - vsphereclusters
   verbs:
   - get

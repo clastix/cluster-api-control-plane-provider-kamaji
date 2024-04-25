@@ -48,17 +48,19 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 		return r.patchOpenStackCluster(ctx, cluster, endpoint, port)
 	case "PacketCluster":
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, true)
+	case "TinkerbellCluster":
+		return r.checkOrPatchGenericCluster(ctx, cluster, endpoint, port)
 	case "VSphereCluster":
-		return r.checkOrPatchVSphereCluster(ctx, cluster, endpoint, port)
+		return r.checkOrPatchGenericCluster(ctx, cluster, endpoint, port)
 	default:
 		return errors.New("unsupported infrastructure provider")
 	}
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=vsphereclusters,verbs=get
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=vsphereclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=vsphereclusters;tinkerbellclusters,verbs=get
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=vsphereclusters;tinkerbellclusters,verbs=patch
 
-func (r *KamajiControlPlaneReconciler) checkOrPatchVSphereCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
+func (r *KamajiControlPlaneReconciler) checkOrPatchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
 	if err := r.checkGenericCluster(ctx, cluster, endpoint, port); err != nil {
 		if errors.As(err, &UnmanagedControlPlaneAddressError{}) {
 			return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
@@ -70,7 +72,7 @@ func (r *KamajiControlPlaneReconciler) checkOrPatchVSphereCluster(ctx context.Co
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters;nutanixclusters;packetclusters;awsclusters;hetznerclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=awsclusters;hetznerclusters;kubevirtclusters;nutanixclusters;packetclusters,verbs=patch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status;nutanixclusters/status;packetclusters/status,verbs=patch
 
 func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64, patchStatus bool) error {
