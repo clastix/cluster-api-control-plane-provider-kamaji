@@ -19,6 +19,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -27,6 +28,8 @@ import (
 
 // KamajiControlPlaneReconciler reconciles a KamajiControlPlane object.
 type KamajiControlPlaneReconciler struct {
+	MaxConcurrentReconciles int
+
 	client client.Client
 }
 
@@ -281,5 +284,6 @@ func (r *KamajiControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		}))).
 		Owns(&kamajiv1alpha1.TenantControlPlane{}).
 		Owns(&corev1.Secret{}).
+		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
 		Complete(r)
 }
