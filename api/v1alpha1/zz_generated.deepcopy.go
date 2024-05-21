@@ -98,6 +98,8 @@ func (in *DeploymentComponent) DeepCopyInto(out *DeploymentComponent) {
 			(*out)[key] = val
 		}
 	}
+	in.AdditionalMetadata.DeepCopyInto(&out.AdditionalMetadata)
+	in.PodAdditionalMetadata.DeepCopyInto(&out.PodAdditionalMetadata)
 	in.Strategy.DeepCopyInto(&out.Strategy)
 	if in.Affinity != nil {
 		in, out := &in.Affinity, &out.Affinity

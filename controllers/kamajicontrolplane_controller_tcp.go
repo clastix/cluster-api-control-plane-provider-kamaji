@@ -132,6 +132,9 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			// Deployment
 			tcp.Spec.ControlPlane.Deployment.NodeSelector = kcp.Spec.Deployment.NodeSelector
 			tcp.Spec.ControlPlane.Deployment.RuntimeClassName = kcp.Spec.Deployment.RuntimeClassName
+			tcp.Spec.ControlPlane.Deployment.ServiceAccountName = kcp.Spec.Deployment.ServiceAccountName
+			tcp.Spec.ControlPlane.Deployment.AdditionalMetadata = kcp.Spec.Deployment.AdditionalMetadata
+			tcp.Spec.ControlPlane.Deployment.PodAdditionalMetadata = kcp.Spec.Deployment.PodAdditionalMetadata
 			tcp.Spec.ControlPlane.Deployment.Strategy = kcp.Spec.Deployment.Strategy
 			tcp.Spec.ControlPlane.Deployment.Affinity = kcp.Spec.Deployment.Affinity
 			tcp.Spec.ControlPlane.Deployment.Tolerations = kcp.Spec.Deployment.Tolerations
