@@ -112,8 +112,15 @@ type KamajiControlPlaneSpec struct {
 }
 
 type DeploymentComponent struct {
-	NodeSelector              map[string]string                 `json:"nodeSelector,omitempty"`
-	RuntimeClassName          string                            `json:"runtimeClassName,omitempty"`
+	NodeSelector     map[string]string `json:"nodeSelector,omitempty"`
+	RuntimeClassName string            `json:"runtimeClassName,omitempty"`
+	// AdditionalMetadata refers to the additional labels and annotations attached
+	// to the resulting Deployment managed by Kamaji.
+	AdditionalMetadata kamajiv1alpha1.AdditionalMetadata `json:"additionalMetadata,omitempty"`
+	// PodAdditionalMetadata defines the additional labels and annotations that must be attached
+	// to the resulting Pods managed by the Deployment.
+	PodAdditionalMetadata     kamajiv1alpha1.AdditionalMetadata `json:"podAdditionalMetadata,omitempty"`
+	ServiceAccountName        string                            `json:"serviceAccountName,omitempty"`
 	Strategy                  appsv1.DeploymentStrategy         `json:"strategy,omitempty"`
 	Affinity                  *corev1.Affinity                  `json:"affinity,omitempty"`
 	Tolerations               []corev1.Toleration               `json:"tolerations,omitempty"`
