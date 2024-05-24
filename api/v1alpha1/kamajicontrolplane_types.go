@@ -162,6 +162,7 @@ type KamajiControlPlaneStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:categories=cluster-api;kamaji,shortName=kjcp
 //+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 //+kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The desired Kubernetes version"
 //+kubebuilder:printcolumn:name="Initialized",type="boolean",JSONPath=".status.initialized",description="Check if the Kamaji Control Plane has been initialized"
