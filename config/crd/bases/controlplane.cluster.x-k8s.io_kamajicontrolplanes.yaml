@@ -8,9 +8,14 @@ metadata:
 spec:
   group: controlplane.cluster.x-k8s.io
   names:
+    categories:
+    - cluster-api
+    - kamaji
     kind: KamajiControlPlane
     listKind: KamajiControlPlaneList
     plural: kamajicontrolplanes
+    shortNames:
+    - ktcp
     singular: kamajicontrolplane
   scope: Namespaced
   versions:
