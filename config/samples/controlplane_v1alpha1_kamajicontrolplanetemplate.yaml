@@ -1,0 +1,132 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: KamajiControlPlaneTemplate
+metadata:
+  labels:
+    app.kubernetes.io/name: kamajicontrolplanetemplate
+    app.kubernetes.io/instance: kamajicontrolplanetemplate-sample
+    app.kubernetes.io/part-of: cluster-api-control-plane-provider-kamaji
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: cluster-api-control-plane-provider-kamaji
+  name: kamajicontrolplanetemplate-sample
+spec:
+  template:
+    spec:
+      dataStoreName: default
+      addons:
+        coreDNS: { }
+        konnectivity: { }
+        kubeProxy: { }
+      admissionControllers:
+        - AlwaysAdmit
+        - AlwaysDeny
+        - AlwaysPullImages
+        - CertificateApproval
+        - CertificateSigning
+        - CertificateSubjectRestriction
+        - DefaultIngressClass
+        - DefaultStorageClass
+        - DefaultTolerationSeconds
+        - DenyEscalatingExec
+        - DenyExecOnPrivileged
+        - DenyServiceExternalIPs
+        - EventRateLimit
+        - ExtendedResourceToleration
+        - ImagePolicyWebhook
+        - LimitPodHardAntiAffinityTopology
+        - LimitRanger
+        - MutatingAdmissionWebhook
+        - NamespaceAutoProvision
+        - NamespaceExists
+        - NamespaceLifecycle
+        - NodeRestriction
+        - OwnerReferencesPermissionEnforcement
+        - PersistentVolumeClaimResize
+        - PersistentVolumeLabel
+        - PodNodeSelector
+        - PodSecurity
+        - PodSecurityPolicy
+        - PodTolerationRestriction
+        - Priority
+        - ResourceQuota
+        - RuntimeClass
+        - SecurityContextDeny
+        - ServiceAccount
+        - StorageObjectInUseProtection
+        - TaintNodesByCondition
+        - ValidatingAdmissionWebhook
+      registry: registry.k8s.io
+      controllerManager:
+        extraVolumeMounts: [ ]
+        extraArgs:
+          - --cloud-provider=external
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+        containerImageName: kube-controller-manager
+      apiServer:
+        extraVolumeMounts: [ ]
+        extraArgs:
+          - --cloud-provider=external
+        resources:
+          requests:
+            cpu: 750m
+            memory: 256Mi
+        containerImageName: kube-apiserver
+      scheduler:
+        extraVolumeMounts: [ ]
+        extraArgs: [ ]
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+        containerImageName: kube-scheduler
+      kubelet:
+        preferredAddressTypes:
+          - InternalIP
+          - ExternalIP
+          - Hostname
+        cgroupfs: systemd
+      network:
+        serviceType: LoadBalancer
+        serviceLabels:
+          kamaji.clastix.io/service: external
+        serviceAnnotations:
+          service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+        certSANs:
+          - kamajicontrolplane-sample.eu-west-01.cloudapp.azure.com
+      deployment:
+        nodeSelector:
+          kubernetes.io/os: linux
+        runtimeClassName: runc
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 0
+            maxSurge: 100%
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: kamaji.clastix.io/name
+                      operator: In
+                      values:
+                        - kamajicontrolplane-sample
+                topologyKey: kubernetes.io/hostname
+        tolerations:
+          - effect: NoExecute
+            operator: Equal
+            value: workload
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                kamaji.clastix.io/name: kamajicontrolplane-sample
+            matchLabelKeys:
+              - pod-template-hash
+        extraInitContainers: [ ]
+        extraContainers: [ ]
+        extraVolumes: [ ]
