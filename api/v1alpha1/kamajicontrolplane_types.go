@@ -75,6 +75,36 @@ type CoreDNSAddonSpec struct {
 
 // KamajiControlPlaneSpec defines the desired state of KamajiControlPlane.
 type KamajiControlPlaneSpec struct {
+	KamajiControlPlaneFields `json:",inline"`
+	// Number of desired replicas for the given TenantControlPlane.
+	// Defaults to 2.
+	// +kubebuilder:default=2
+	Replicas *int32 `json:"replicas,omitempty"`
+	// Version defines the desired Kubernetes version.
+	// Use the semantic version without the `v` prefix, such as 1.27.0
+	Version string `json:"version"`
+}
+
+type DeploymentComponent struct {
+	NodeSelector     map[string]string `json:"nodeSelector,omitempty"`
+	RuntimeClassName string            `json:"runtimeClassName,omitempty"`
+	// AdditionalMetadata refers to the additional labels and annotations attached
+	// to the resulting Deployment managed by Kamaji.
+	AdditionalMetadata kamajiv1alpha1.AdditionalMetadata `json:"additionalMetadata,omitempty"`
+	// PodAdditionalMetadata defines the additional labels and annotations that must be attached
+	// to the resulting Pods managed by the Deployment.
+	PodAdditionalMetadata     kamajiv1alpha1.AdditionalMetadata `json:"podAdditionalMetadata,omitempty"`
+	ServiceAccountName        string                            `json:"serviceAccountName,omitempty"`
+	Strategy                  appsv1.DeploymentStrategy         `json:"strategy,omitempty"`
+	Affinity                  *corev1.Affinity                  `json:"affinity,omitempty"`
+	Tolerations               []corev1.Toleration               `json:"tolerations,omitempty"`
+	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+	ExtraInitContainers       []corev1.Container                `json:"extraInitContainers,omitempty"`
+	ExtraContainers           []corev1.Container                `json:"extraContainers,omitempty"`
+	ExtraVolumes              []corev1.Volume                   `json:"extraVolumes,omitempty"`
+}
+
+type KamajiControlPlaneFields struct {
 	// The Kamaji DataStore to use for the given TenantControlPlane.
 	// Retrieve the list of the allowed ones by issuing "kubectl get datastores.kamaji.clastix.io".
 	DataStoreName string `json:"dataStoreName"`
@@ -102,32 +132,6 @@ type KamajiControlPlaneSpec struct {
 	Network NetworkComponent `json:"network,omitempty"`
 	// Configure how the TenantControlPlane Deployment object should be configured.
 	Deployment DeploymentComponent `json:"deployment,omitempty"`
-	// Number of desired replicas for the given TenantControlPlane.
-	// Defaults to 2.
-	// +kubebuilder:default=2
-	Replicas *int32 `json:"replicas,omitempty"`
-	// Version defines the desired Kubernetes version.
-	// Use the semantic version without the `v` prefix, such as 1.27.0
-	Version string `json:"version"`
-}
-
-type DeploymentComponent struct {
-	NodeSelector     map[string]string `json:"nodeSelector,omitempty"`
-	RuntimeClassName string            `json:"runtimeClassName,omitempty"`
-	// AdditionalMetadata refers to the additional labels and annotations attached
-	// to the resulting Deployment managed by Kamaji.
-	AdditionalMetadata kamajiv1alpha1.AdditionalMetadata `json:"additionalMetadata,omitempty"`
-	// PodAdditionalMetadata defines the additional labels and annotations that must be attached
-	// to the resulting Pods managed by the Deployment.
-	PodAdditionalMetadata     kamajiv1alpha1.AdditionalMetadata `json:"podAdditionalMetadata,omitempty"`
-	ServiceAccountName        string                            `json:"serviceAccountName,omitempty"`
-	Strategy                  appsv1.DeploymentStrategy         `json:"strategy,omitempty"`
-	Affinity                  *corev1.Affinity                  `json:"affinity,omitempty"`
-	Tolerations               []corev1.Toleration               `json:"tolerations,omitempty"`
-	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
-	ExtraInitContainers       []corev1.Container                `json:"extraInitContainers,omitempty"`
-	ExtraContainers           []corev1.Container                `json:"extraContainers,omitempty"`
-	ExtraVolumes              []corev1.Volume                   `json:"extraVolumes,omitempty"`
 }
 
 // KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
