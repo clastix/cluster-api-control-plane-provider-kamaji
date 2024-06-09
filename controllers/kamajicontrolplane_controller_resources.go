@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -24,7 +25,7 @@ var ErrEnqueueBack = errors.New("enqueue back")
 
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
-func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) (ctrl.Result, error) {
+func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	// Creating a kubeconfig secret for the workload cluster.
 	if secretName := tcp.Status.KubeConfig.Admin.SecretName; len(secretName) == 0 {
@@ -33,7 +34,13 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 		return ctrl.Result{Requeue: true}, fmt.Errorf("admin kubeconfig still unprocessed by Kamaji, %w", ErrEnqueueBack)
 	}
 
-	if err := r.createOrUpdateKubeconfig(ctx, cluster, kcp, tcp); err != nil {
+	reader := r.client
+
+	if remoteClient != nil {
+		reader = remoteClient
+	}
+
+	if err := r.createOrUpdateKubeconfig(ctx, reader, cluster, kcp, tcp); err != nil {
 		log.Error(err, "unable to replicate kubeconfig secret for the workload cluster")
 
 		return ctrl.Result{}, err
@@ -45,7 +52,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 		return ctrl.Result{Requeue: true}, fmt.Errorf("CA still unprocessed by Kamaji, %w", ErrEnqueueBack)
 	}
 
-	if err := r.createOrUpdateCertificateAuthority(ctx, cluster, kcp, tcp); err != nil {
+	if err := r.createOrUpdateCertificateAuthority(ctx, reader, cluster, kcp, tcp); err != nil {
 		log.Error(err, "unable to replicate CA secret for the workload cluster")
 
 		return ctrl.Result{}, err
@@ -58,7 +65,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 // also in regard to the naming conventions according to the Cluster API contracts about Kubeconfig.
 //
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
-func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, reader client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiCA := &corev1.Secret{}
 	capiCA.Name = fmt.Sprintf("%s-ca", cluster.Name)
 	capiCA.Namespace = cluster.Namespace
@@ -67,7 +74,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 	kamajiCA.Name = tcp.Status.Certificates.CA.SecretName
 	kamajiCA.Namespace = tcp.Namespace
 
-	if err := r.client.Get(ctx, types.NamespacedName{Name: kamajiCA.Name, Namespace: kamajiCA.Namespace}, kamajiCA); err != nil {
+	if err := reader.Get(ctx, types.NamespacedName{Name: kamajiCA.Name, Namespace: kamajiCA.Namespace}, kamajiCA); err != nil {
 		return errors.Wrap(err, "cannot retrieve source-of-truth as Certificate Authority")
 	}
 
@@ -123,7 +130,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 // also in regard to the naming conventions according to the Cluster API contracts about kubeconfig.
 //
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
-func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, reader client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiAdminKubeconfig := &corev1.Secret{}
 	capiAdminKubeconfig.Name = fmt.Sprintf("%s-kubeconfig", cluster.Name)
 	capiAdminKubeconfig.Namespace = cluster.Namespace
@@ -132,7 +139,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 	kamajiAdminKubeconfig.Name = tcp.Status.KubeConfig.Admin.SecretName
 	kamajiAdminKubeconfig.Namespace = tcp.Namespace
 
-	if err := r.client.Get(ctx, types.NamespacedName{Name: kamajiAdminKubeconfig.Name, Namespace: kamajiAdminKubeconfig.Namespace}, kamajiAdminKubeconfig); err != nil {
+	if err := reader.Get(ctx, types.NamespacedName{Name: kamajiAdminKubeconfig.Name, Namespace: kamajiAdminKubeconfig.Namespace}, kamajiAdminKubeconfig); err != nil {
 		return errors.Wrap(err, "cannot retrieve source-of-truth for admin kubeconfig")
 	}
 

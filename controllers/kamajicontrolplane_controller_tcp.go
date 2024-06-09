@@ -11,31 +11,41 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/retry"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 )
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
 //nolint:funlen,gocognit,cyclop
-func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
+func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
 	tcp.Namespace = kcp.GetNamespace()
 
-	if tcp.Annotations == nil {
-		tcp.Annotations = make(map[string]string)
-	}
-
-	if kubeconfigSecretKey := kcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation]; kubeconfigSecretKey != "" {
-		tcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation] = kubeconfigSecretKey
-	} else {
-		delete(tcp.Annotations, kamajiv1alpha1.KubeconfigSecretKeyAnnotation)
-	}
-
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		_, scopeErr := controllerutil.CreateOrUpdate(ctx, r.client, tcp, func() error {
+		k8sClient := r.client
+
+		var isDelegatedExternally bool
+
+		if isDelegatedExternally = remoteClient != nil; isDelegatedExternally {
+			k8sClient = remoteClient
+			tcp.Name, tcp.Namespace = externalclusterreference.GenerateRemoteTenantControlPlaneNames(kcp)
+		}
+
+		_, scopeErr := controllerutil.CreateOrUpdate(ctx, k8sClient, tcp, func() error {
+			if tcp.Annotations == nil {
+				tcp.Annotations = make(map[string]string)
+			}
+
+			if kubeconfigSecretKey := kcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation]; kubeconfigSecretKey != "" {
+				tcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation] = kubeconfigSecretKey
+			} else {
+				delete(tcp.Annotations, kamajiv1alpha1.KubeconfigSecretKeyAnnotation)
+			}
 			// TenantControlPlane port
 			if apiPort := cluster.Spec.ClusterNetwork.APIServerPort; apiPort != nil {
 				tcp.Spec.NetworkProfile.Port = *apiPort
@@ -143,7 +153,11 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.AdditionalContainers = kcp.Spec.Deployment.ExtraContainers
 			tcp.Spec.ControlPlane.Deployment.AdditionalVolumes = kcp.Spec.Deployment.ExtraVolumes
 
-			return controllerutil.SetControllerReference(&kcp, tcp, r.client.Scheme()) //nolint:wrapcheck
+			if !isDelegatedExternally {
+				return controllerutil.SetControllerReference(&kcp, tcp, k8sClient.Scheme()) //nolint:wrapcheck
+			}
+
+			return nil
 		})
 
 		return scopeErr //nolint:wrapcheck

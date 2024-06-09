@@ -8,12 +8,15 @@ import (
 	"os"
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
+	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/component-base/featuregate"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -21,6 +24,9 @@ import (
 
 	controlplanev1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/controllers"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/indexers"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
 )
 
 var (
@@ -36,21 +42,52 @@ func init() {
 	utilruntime.Must(controlplanev1alpha1.AddToScheme(scheme))
 }
 
+//nolint:funlen,cyclop
 func main() {
 	metricsAddr, enableLeaderElection, probeAddr, maxConcurrentReconciles := "", false, "", 1
 
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	flagSet := pflag.NewFlagSet("kamaji-control-plane-provider", pflag.ExitOnError)
+
+	featureGate := featuregate.NewFeatureGate()
+
+	if err := featureGate.Add(map[featuregate.Feature]featuregate.FeatureSpec{
+		features.ExternalClusterReference: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		features.ExternalClusterReferenceCrossNamespace: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+	}); err != nil {
+		setupLog.Error(err, "unable to add feature gates")
+		os.Exit(1)
+	}
+
+	featureGate.AddFlag(flagSet)
+
+	flagSet.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flagSet.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flagSet.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent KamajiControlPlane reconciles which can be run")
+	flagSet.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent KamajiControlPlane reconciles which can be run")
+	// zap logging FlagSet
+	var goFlagSet flag.FlagSet
 
-	opts := zap.Options{
-		Development: true,
+	opts := zap.Options{Development: true}
+	opts.BindFlags(&goFlagSet)
+
+	flagSet.AddGoFlagSet(&goFlagSet)
+
+	if err := flagSet.Parse(os.Args[1:]); err != nil {
+		setupLog.Error(err, "unable to parse arguments")
+		os.Exit(1)
 	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
+
+	ctx := ctrl.SetupSignalHandler()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -71,11 +108,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.KamajiControlPlaneReconciler{MaxConcurrentReconciles: maxConcurrentReconciles}).SetupWithManager(mgr); err != nil {
+	ecrStore, triggerChannel := externalclusterreference.NewStore(), make(chan event.GenericEvent)
+
+	if err = (&controllers.KamajiControlPlaneReconciler{
+		ExternalClusterReferenceStore: ecrStore,
+		FeatureGates:                  featureGate,
+		MaxConcurrentReconciles:       maxConcurrentReconciles,
+	}).SetupWithManager(mgr, triggerChannel); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KamajiControlPlane")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
+
+	if featureGate.Enabled(features.ExternalClusterReference) || featureGate.Enabled(features.ExternalClusterReferenceCrossNamespace) {
+		if err = indexers.SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create indexers")
+			os.Exit(1)
+		}
+
+		if err = (&controllers.ExternalClusterReferenceReconciler{Client: mgr.GetClient(), Store: ecrStore, TriggerChannel: triggerChannel}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "ExternalClusterReference")
+			os.Exit(1)
+		}
+	}
 
 	if err = mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -89,7 +144,7 @@ func main() {
 
 	setupLog.Info("starting manager")
 
-	if err = mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err = mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
