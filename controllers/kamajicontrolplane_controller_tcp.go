@@ -6,6 +6,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 	"github.com/pkg/errors"
@@ -53,7 +54,12 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			// Replicas
 			tcp.Spec.ControlPlane.Deployment.Replicas = kcp.Spec.Replicas
 			// Version
-			tcp.Spec.Kubernetes.Version = fmt.Sprintf("v%s", kcp.Spec.Version)
+			// Tolerate version strings without a "v" prefix: prepend it if it's not there
+			if !strings.HasPrefix(kcp.Spec.Version, "v") {
+				tcp.Spec.Kubernetes.Version = fmt.Sprintf("v%s", kcp.Spec.Version)
+			} else {
+				tcp.Spec.Kubernetes.Version = kcp.Spec.Version
+			}
 			// Kamaji addons and CoreDNS overrides
 			tcp.Spec.Addons = kcp.Spec.Addons.AddonsSpec
 			if kcp.Spec.Addons.CoreDNS != nil {

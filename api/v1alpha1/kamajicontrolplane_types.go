@@ -81,7 +81,6 @@ type KamajiControlPlaneSpec struct {
 	// +kubebuilder:default=2
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Version defines the desired Kubernetes version.
-	// Use the semantic version without the `v` prefix, such as 1.27.0
 	Version string `json:"version"`
 }
 
