@@ -6,6 +6,7 @@ package v1alpha1
 type KamajiControlPlaneConditionType string
 
 var (
+	FoundExternalClusterReferenceConditionType  KamajiControlPlaneConditionType = "FoundExternalReferenceClient"
 	TenantControlPlaneCreatedConditionType      KamajiControlPlaneConditionType = "TenantControlPlaneCreated"
 	TenantControlPlaneAddressReadyConditionType KamajiControlPlaneConditionType = "TenantControlPlaneAddressReady"
 	InfrastructureClusterPatchedConditionType   KamajiControlPlaneConditionType = "InfrastructureClusterPatched"

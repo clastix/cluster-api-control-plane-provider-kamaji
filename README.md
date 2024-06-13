@@ -21,7 +21,7 @@ You can refer to the [official documentation website](https://kamaji.clastix.io/
 
 ### 📄 Documentation
 
-The Kamaji Cluster API Control Plane provider documentation is referenced in the [Kamaji documentation](https://kamaji.clastix.io/) website.
+The Kamaji Cluster API Control Plane provider documentation is referenced in the [Kamaji documentation](https://kamaji.clastix.io/guides/cluster-api/) website.
 
 ### 🚀 Supported CAPI infrastructure providers
 

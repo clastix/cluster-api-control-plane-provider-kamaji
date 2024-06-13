@@ -14,21 +14,29 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/component-base/featuregate"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 )
 
 // KamajiControlPlaneReconciler reconciles a KamajiControlPlane object.
 type KamajiControlPlaneReconciler struct {
-	MaxConcurrentReconciles int
+	ExternalClusterReferenceStore externalclusterreference.Store
+	FeatureGates                  featuregate.FeatureGate
+	MaxConcurrentReconciles       int
 
 	client client.Client
 }
@@ -38,7 +46,7 @@ type KamajiControlPlaneReconciler struct {
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kamajicontrolplanes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
 
-func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop,maintidx
+func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop,maintidx,gocognit
 	var err error
 
 	now, log := time.Now(), ctrllog.FromContext(ctx)
@@ -65,6 +73,11 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, nil
 	}
+	// Handling finalizer for external deployment:
+	// in case of ExternalClusterReference the remote TCP must be deleted.
+	if kcp.DeletionTimestamp != nil {
+		return r.handleDeletion(ctx, kcp)
+	}
 	// Retrieving the Cluster information
 	cluster := capiv1beta1.Cluster{}
 	cluster.SetName(kcp.GetOwnerReferences()[0].Name)
@@ -81,7 +94,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
-	//
+	// Extracting conditions, used to update the KamajiControlPlane ones upon the end of the reconciliation.
 	conditions := kcp.Status.Conditions
 
 	defer func() {
@@ -93,11 +106,35 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 			log.Error(err, "unable to update kcpv1alpha1.KamajiControlPlane conditions")
 		}
 	}()
+	// When ExternalClusterReference feature is enabled, we need to interact with a different API endpoint
+	// to deploy and read the resulting Tenant Control Plane: in the case of nil value, it means we're targeting
+	// the same management cluster, so no extra quirks are required.
+	var remoteClient client.Client
+
+	if kcp.Spec.Deployment.ExternalClusterReference != nil {
+		TrackConditionType(&conditions, kcpv1alpha1.FoundExternalClusterReferenceConditionType, kcp.Generation, func() error {
+			remoteClient, err = r.extractRemoteClient(ctx, kcp)
+
+			return err
+		})
+
+		if err != nil {
+			log.Error(err, "unable to get remote Client")
+
+			return ctrl.Result{}, err
+		}
+
+		if err = r.handleFinalizer(ctx, &kcp); err != nil {
+			log.Error(err, "unable to update finalizers")
+
+			return ctrl.Result{}, err
+		}
+	}
 	// Reconciling the Kamaji TenantControlPlane resource
 	var tcp *kamajiv1alpha1.TenantControlPlane
 
 	TrackConditionType(&conditions, kcpv1alpha1.TenantControlPlaneCreatedConditionType, kcp.Generation, func() error {
-		tcp, err = r.createOrUpdateTenantControlPlane(ctx, cluster, kcp)
+		tcp, err = r.createOrUpdateTenantControlPlane(ctx, remoteClient, cluster, kcp)
 
 		return err
 	})
@@ -207,7 +244,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	var result ctrl.Result
 
 	TrackConditionType(&conditions, kcpv1alpha1.KubeadmResourcesCreatedReadyConditionType, kcp.Generation, func() error {
-		result, err = r.createRequiredResources(ctx, cluster, kcp, tcp)
+		result, err = r.createRequiredResources(ctx, remoteClient, cluster, kcp, tcp)
 
 		return err
 	})
@@ -275,15 +312,26 @@ func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx contex
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KamajiControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *KamajiControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, channel chan event.GenericEvent) error {
 	r.client = mgr.GetClient()
-	//nolint:wrapcheck
-	return ctrl.NewControllerManagedBy(mgr).
+
+	ctrlBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&kcpv1alpha1.KamajiControlPlane{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			return len(object.GetOwnerReferences()) > 0
 		}))).
-		Owns(&kamajiv1alpha1.TenantControlPlane{}).
 		Owns(&corev1.Secret{}).
-		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
-		Complete(r)
+		WatchesRawSource(&source.Channel{Source: channel}, &handler.EnqueueRequestForObject{}).
+		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
+
+	cs, csErr := kubernetes.NewForConfig(mgr.GetConfig())
+	if csErr != nil {
+		return goerrors.Wrap(csErr, "cannot create Kubernetes Client-set")
+	}
+
+	if _, rsErr := cs.Discovery().ServerResourcesForGroupVersion(kamajiv1alpha1.GroupVersion.String()); rsErr == nil {
+		ctrlBuilder = ctrlBuilder.Owns(&kamajiv1alpha1.TenantControlPlane{})
+	}
+
+	//nolint:wrapcheck
+	return ctrlBuilder.Complete(r)
 }
