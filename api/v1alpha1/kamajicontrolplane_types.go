@@ -110,7 +110,7 @@ type DeploymentComponent struct {
 type KamajiControlPlaneFields struct {
 	// The Kamaji DataStore to use for the given TenantControlPlane.
 	// Retrieve the list of the allowed ones by issuing "kubectl get datastores.kamaji.clastix.io".
-	DataStoreName string `json:"dataStoreName"`
+	DataStoreName string `json:"dataStoreName,omitempty"`
 	// The addons that must be managed by Kamaji, such as CoreDNS, kube-proxy, and konnectivity.
 	Addons AddonsSpec `json:"addons,omitempty"`
 	// List of the admission controllers to configure for the TenantControlPlane kube-apiserver.
