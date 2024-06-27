@@ -6532,7 +6532,6 @@ spec:
                 description: Version defines the desired Kubernetes version.
                 type: string
             required:
-            - dataStoreName
             - version
             type: object
           status:
@@ -13181,8 +13180,6 @@ spec:
                                 type: object
                             type: object
                         type: object
-                    required:
-                    - dataStoreName
                     type: object
                 required:
                 - spec

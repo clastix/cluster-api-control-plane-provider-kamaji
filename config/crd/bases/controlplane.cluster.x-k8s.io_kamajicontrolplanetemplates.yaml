@@ -6920,8 +6920,6 @@ spec:
                                 type: object
                             type: object
                         type: object
-                    required:
-                    - dataStoreName
                     type: object
                 required:
                 - spec
