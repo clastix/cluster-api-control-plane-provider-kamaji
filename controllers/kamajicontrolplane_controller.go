@@ -320,7 +320,7 @@ func (r *KamajiControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, channe
 			return len(object.GetOwnerReferences()) > 0
 		}))).
 		Owns(&corev1.Secret{}).
-		WatchesRawSource(&source.Channel{Source: channel}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(channel, &handler.EnqueueRequestForObject{})).
 		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
 
 	cs, csErr := kubernetes.NewForConfig(mgr.GetConfig())
