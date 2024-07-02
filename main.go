@@ -24,9 +24,9 @@ import (
 
 	controlplanev1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/controllers"
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/indexers"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/indexers"
 )
 
 var (
