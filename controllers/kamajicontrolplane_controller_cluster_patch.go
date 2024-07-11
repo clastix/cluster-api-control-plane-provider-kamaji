@@ -131,7 +131,12 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", gkc.GetKind()))
 	}
 
-	controlPlaneEndpoint := gkc.Object["spec"].(map[string]interface{})["controlPlaneEndpoint"].(map[string]interface{}) //nolint:forcetypeassert
+	controlPlaneEndpointUn := gkc.Object["spec"].(map[string]interface{})["controlPlaneEndpoint"] //nolint:forcetypeassert
+	if controlPlaneEndpointUn == nil {
+		return *NewUnmanagedControlPlaneAddressError(gkc.GetKind())
+	}
+
+	controlPlaneEndpoint := controlPlaneEndpointUn.(map[string]interface{}) //nolint:forcetypeassert
 
 	cpHost, cpPort := controlPlaneEndpoint["host"].(string), controlPlaneEndpoint["port"].(int64) //nolint:forcetypeassert
 
