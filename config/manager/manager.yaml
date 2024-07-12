@@ -70,6 +70,7 @@ spec:
         - /manager
         args:
         - --leader-elect
+        - "--feature-gates=ExternalClusterReference=${CACPPK_EXTERNAL_CLUSTER_REFERENCE:=false},ExternalClusterReferenceCrossNamespace=${CACPPK_EXTERNAL_CLUSTER_REFERENCE_CROSS_NAMESPACE:=false}"
         image: controller:latest
         name: manager
         securityContext:
