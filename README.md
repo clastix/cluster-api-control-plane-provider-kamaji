@@ -36,6 +36,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 | [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack) ([technical considerations](docs/providers-openstack.md))                                                          | += 0.8.0          |
 | [Tinkerbell](https://github.com/tinkerbell/cluster-api-provider-tinkerbell) ([technical considerations](docs/providers-tinkerbell.md))  | += v0.5.2         |
 | [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))      | += 1.7.0          |
+| [IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud) ([technical considerations](docs/providers-ionoscloud.md)) | += v0.3.0        |
 
 > Are you looking for further integrations?
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
