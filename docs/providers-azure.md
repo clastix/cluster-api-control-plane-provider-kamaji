@@ -24,9 +24,10 @@ metadata:
   namespace: default
 spec:
   clusterNetwork:
+    apiServerPort: 443
     pods:
       cidrBlocks:
-        - 192.168.0.0/16
+        - 10.244.0.0/16
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KamajiControlPlane
@@ -46,11 +47,10 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: azure-identity
-  location: germanywestcentral
+  location: westeurope
+  controlPlaneEnabled: false
   networkSpec:
     subnets:
-      - name: control-plane-subnet
-        role: control-plane
       - name: node-subnet
         role: node
     vnet:
@@ -97,11 +97,10 @@ spec:
       - InternalIP
       - Hostname
   network:
-    serviceAddress: 78.134.89.204
-    serviceType: ClusterIP
+    serviceType: LoadBalancer
   deployment:
   replicas: 2
-  version: 1.26.0
+  version: 1.30.0
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -125,7 +124,7 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureMachineTemplate
         name: capi-quickstart-md-0
-      version: v1.26.0
+      version: v1.30.0
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
