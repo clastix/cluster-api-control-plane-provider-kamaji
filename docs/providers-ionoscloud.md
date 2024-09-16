@@ -53,7 +53,6 @@ metadata:
   labels:
     cluster.x-k8s.io/cluster-name: kamaji-quickstart
 spec:
-  location: REDACTED
   credentialsRef:
     name: kamaji-quickstart-credentials
 ---
@@ -148,6 +147,7 @@ spec:
 
 ## Technical considerations
 
-The Cluster API IONOS Cloud infrastructure provider supports Kamaji managed Control Planes starting from [v0.3.0](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/releases/tag/v0.3.0).
+The Cluster API IONOS Cloud infrastructure provider supports Kamaji managed Control Planes starting from [v0.4.0](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud/releases/tag/v0.4.0).
 
 To make use of service type `LoadBalancer` for the `KamajiControlPlane`, you need to install the [IONOS Cloud Controller Manager](https://github.com/ionos-cloud/cloud-provider-ionoscloud/tree/main/charts/ionoscloud-cloud-controller-manager).
+Alternatively, you can install the CAPI stack in a [managed cluster](https://cloud.ionos.com/managed/kubernetes).
