@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"context"
+	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -20,11 +21,12 @@ const (
 )
 
 var (
-	ErrExternalClusterReferenceNotEnabled              = errors.New("external cluster feature gates are not enabled")
-	ErrExternalClusterReferenceCrossNamespaceReference = errors.New("the ExternalClusterReference is enforcing kubeconfig in the same Namespace, ExternalClusterReferenceCrossNamespace must be enabled")
-	ErrExternalCLusterReferenceSecretEmptyError        = errors.New("could not extract kubeconfig for external cluster reference, secret is empty")
-	ErrExternalClusterReferenceSecretKeyEmpty          = errors.New("could not extract kubeconfig for external cluster reference, key is empty")
-	ErrExternalClusterReferenceNonInitializedStore     = errors.New("remote manager is not yet initialized")
+	ErrExternalClusterReferenceNotEnabled                 = errors.New("external cluster feature gates are not enabled")
+	ErrExternalClusterReferenceCrossNamespaceReference    = errors.New("the ExternalClusterReference is enforcing kubeconfig in the same Namespace, ExternalClusterReferenceCrossNamespace must be enabled")
+	ErrExternalCLusterReferenceSecretEmptyError           = errors.New("could not extract kubeconfig for external cluster reference, secret is empty")
+	ErrExternalClusterReferenceSecretKeyEmpty             = errors.New("could not extract kubeconfig for external cluster reference, key is empty")
+	ErrExternalClusterReferenceNonInitializedStore        = errors.New("remote manager is not yet initialized")
+	ErrExternalClusterReferenceTenantControlPlaneNotFound = errors.New("TenantControlPlane custom resource not available in external cluster")
 )
 
 //nolint:cyclop
@@ -63,6 +65,12 @@ func (r *KamajiControlPlaneReconciler) extractRemoteClient(ctx context.Context, 
 	mgr, found := r.ExternalClusterReferenceStore.Get(ecr.GenerateKeyNameFromKamaji(&kcp), secret.ResourceVersion)
 	if !found {
 		return nil, ErrExternalClusterReferenceNonInitializedStore
+	}
+
+	// Use the RESTMapper to check if the CRD is installed
+	gvr := kamajiv1alpha1.GroupVersion.WithResource("tenantcontrolplanes")
+	if _, err := mgr.GetRESTMapper().KindFor(gvr); err != nil {
+		return nil, ErrExternalClusterReferenceTenantControlPlaneNotFound
 	}
 
 	return mgr.GetClient(), nil
