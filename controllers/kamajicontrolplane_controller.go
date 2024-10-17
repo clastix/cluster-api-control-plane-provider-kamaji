@@ -193,26 +193,34 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	if tcp.Status.Kubernetes.Version.Status == nil {
+		log.Info("kamajiv1alpha1.TenantControlPlane is not yet initialized, enqueuing back")
+
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady && !kcp.Status.Initialized {
+		// TenantControlPlane has been initialized
+		TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
+			err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+				kcp.Status.Initialized = true
+			})
+
+			return err
+		})
+
+		if err != nil {
+			log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as initialized")
+
+			return ctrl.Result{}, err
+		}
+	}
+
+	if !kcp.Status.Initialized {
 		log.Info("kcpv1alpha1.KamajiControlPlane is not yet initialized, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
-			kcp.Status.Initialized = false
-		})
+		return ctrl.Result{Requeue: true}, nil
 	}
-	// KamajiControlPlane has been initialized
-	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
-		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
-			kcp.Status.Initialized = true
-		})
 
-		return err
-	})
-
-	if err != nil {
-		log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as initialized")
-
-		return ctrl.Result{}, err
-	}
 	// Updating KamajiControlPlane ready status, along with scaling values
 	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
