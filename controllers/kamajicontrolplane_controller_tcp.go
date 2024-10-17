@@ -86,6 +86,9 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			}
 			// Kamaji specific options
 			tcp.Spec.DataStore = kcp.Spec.DataStoreName
+			if kcp.Spec.DataStoreSchema != "" {
+				tcp.Spec.DataStoreSchema = kcp.Spec.DataStoreSchema
+			}
 			tcp.Spec.Kubernetes.AdmissionControllers = kcp.Spec.AdmissionControllers
 			tcp.Spec.ControlPlane.Deployment.RegistrySettings.Registry = kcp.Spec.ContainerRegistry
 			// Volume mounts
