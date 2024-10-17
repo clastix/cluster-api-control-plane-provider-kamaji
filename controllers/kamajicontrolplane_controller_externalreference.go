@@ -65,9 +65,5 @@ func (r *KamajiControlPlaneReconciler) extractRemoteClient(ctx context.Context, 
 		return nil, ErrExternalClusterReferenceNonInitializedStore
 	}
 
-	if err := mgr.GetClient().List(ctx, &v1alpha1.KamajiControlPlaneList{}); err != nil {
-		return nil, errors.Wrapf(err, "cannot list KamajiControlPlane resources")
-	}
-
 	return mgr.GetClient(), nil
 }
