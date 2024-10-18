@@ -2,9 +2,13 @@ name: E2E
 
 on:
   push:
-    branches: [ "*" ]
+    branches:
+      - "master"
+      - "main"
   pull_request:
-    branches: [ "*" ]
+    branches:
+      - "master"
+      - "main"
 
 jobs:
   create-cluster:
@@ -13,6 +17,19 @@ jobs:
       - uses: actions/checkout@v4
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          push: false
+          load: true
+          tags: docker.io/clastix/cluster-api-control-plane-provider-kamaji:${{ github.sha }}
+      - name: "Load image into kind cluster"
+        run: |
+          kind load docker-image --name chart-testing docker.io/clastix/cluster-api-control-plane-provider-kamaji:$GITHUB_SHA
       - name: "Setup Kubevirt Infrastructure Stack"
         run: |
           # Install Metal LB for exposing Kubevirt based Workload Cluster's Api server
@@ -75,22 +92,35 @@ jobs:
           helm repo update
           helm install kamaji clastix/kamaji -n kamaji-system --create-namespace
 
-      - name: "Setup CAPI stack with kubevirt as infra and kamaji as controlplane providers"
+      - name: "Setup clusterctl config"
         run: |
+          sed -i "s/docker.io\/clastix\/cluster-api-control-plane-provider-kamaji:.*/docker.io\/clastix\/cluster-api-control-plane-provider-kamaji:$GITHUB_SHA/g" config/control-plane-components.yaml
+          mkdir -p ${HOME}/control-plane-kamaji/v0.11.0/
+          cp config/control-plane-components.yaml ${HOME}/control-plane-kamaji/v0.11.0/
+          cp config/metadata.yaml ${HOME}/control-plane-kamaji/v0.11.0/
+
           mkdir ~/.cluster-api
           touch ~/.cluster-api/clusterctl.yaml
+
           cat <<EOF > ~/.cluster-api/clusterctl.yaml
           providers:
           - name: "kamaji"
-            url: "https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases/v0.11.0/control-plane-components.yaml"
+            url: "${HOME}/control-plane-kamaji/v0.11.0/control-plane-components.yaml"
             type: "ControlPlaneProvider"
           EOF
 
+      - name: "Install CAPI stack with kubevirt as infra and kamaji as controlplane providers"
+        run: |
           clusterctl init --infrastructure kubevirt --control-plane kamaji
 
           kubectl wait deploy -n kamaji-system capi-kamaji-controller-manager --for=condition=Available --timeout=10m
           kubectl wait deploy -n capi-kubeadm-bootstrap-system capi-kubeadm-bootstrap-controller-manager  --for=condition=Available --timeout=10m
           kubectl wait deploy -n capi-system capi-controller-manager  --for=condition=Available --timeout=10m
+          IMAGE=$(kubectl get deploy -n kamaji-system capi-kamaji-controller-manager -o yaml | grep image | grep $GITHUB_SHA)
+          if [[ $IMAGE != *"$GITHUB_SHA"* ]]; then
+            echo "Not using the expected PR image"
+            exit 1
+          fi
 
       - name: "Deploy target cluster"
         run: |
