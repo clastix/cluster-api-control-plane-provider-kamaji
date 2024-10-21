@@ -1,0 +1,153 @@
+name: E2E
+
+on:
+  push:
+    branches:
+      - "master"
+      - "main"
+  pull_request:
+    branches:
+      - "master"
+      - "main"
+
+jobs:
+  create-cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          push: false
+          load: true
+          tags: docker.io/clastix/cluster-api-control-plane-provider-kamaji:${{ github.sha }}
+      - name: "Load image into kind cluster"
+        run: |
+          kind load docker-image --name chart-testing docker.io/clastix/cluster-api-control-plane-provider-kamaji:$GITHUB_SHA
+      - name: "Setup Kubevirt Infrastructure Stack"
+        run: |
+          # Install Metal LB for exposing Kubevirt based Workload Cluster's Api server
+          METALLB_VER=$(curl "https://api.github.com/repos/metallb/metallb/releases/latest" | jq -r ".tag_name")
+          kubectl apply -f "https://raw.githubusercontent.com/metallb/metallb/${METALLB_VER}/config/manifests/metallb-native.yaml"
+          kubectl wait pods -n metallb-system -l app=metallb,component=controller --for=condition=Ready --timeout=10m
+          kubectl wait pods -n metallb-system -l app=metallb,component=speaker --for=condition=Ready --timeout=2m
+
+          GW_IP=$(docker network inspect -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}' kind)
+          NET_IP=$(echo ${GW_IP} | sed -E 's|^([0-9]+\.[0-9]+)\..*$|\1|g')
+          cat <<EOF | sed -E "s|172.19|${NET_IP}|g" | kubectl apply -f -
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: capi-ip-pool
+            namespace: metallb-system
+          spec:
+            addresses:
+            - 172.19.255.200-172.19.255.250
+          ---
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: empty
+            namespace: metallb-system
+          EOF
+
+          # get KubeVirt version
+          KV_VER=$(curl "https://api.github.com/repos/kubevirt/kubevirt/releases/latest" | jq -r ".tag_name")
+          # deploy required CRDs
+          kubectl apply -f "https://github.com/kubevirt/kubevirt/releases/download/${KV_VER}/kubevirt-operator.yaml"
+          # deploy the KubeVirt custom resource
+          kubectl apply -f "https://github.com/kubevirt/kubevirt/releases/download/${KV_VER}/kubevirt-cr.yaml"
+          kubectl wait -n kubevirt kv kubevirt --for=condition=Available --timeout=10m
+
+      - name: "Install clusterctl and helm binaries"
+        run: |
+          curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.4/clusterctl-linux-amd64 -o clusterctl
+          sudo chmod +x clusterctl
+          sudo mv clusterctl /usr/bin/clusterctl
+          clusterctl version
+
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          sudo chmod 700 get_helm.sh
+          ./get_helm.sh
+          helm version
+
+      - name: "Setup kamaji"
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          helm install \
+            cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --create-namespace \
+            --version v1.11.0 \
+            --set installCRDs=true
+
+          helm repo add clastix https://clastix.github.io/charts
+          helm repo update
+          helm install kamaji clastix/kamaji -n kamaji-system --create-namespace
+
+      - name: "Setup clusterctl config"
+        run: |
+          sed -i "s/docker.io\/clastix\/cluster-api-control-plane-provider-kamaji:.*/docker.io\/clastix\/cluster-api-control-plane-provider-kamaji:$GITHUB_SHA/g" config/control-plane-components.yaml
+          mkdir -p ${HOME}/control-plane-kamaji/v0.11.0/
+          cp config/control-plane-components.yaml ${HOME}/control-plane-kamaji/v0.11.0/
+          cp config/metadata.yaml ${HOME}/control-plane-kamaji/v0.11.0/
+
+          mkdir ~/.cluster-api
+          touch ~/.cluster-api/clusterctl.yaml
+
+          cat <<EOF > ~/.cluster-api/clusterctl.yaml
+          providers:
+          - name: "kamaji"
+            url: "${HOME}/control-plane-kamaji/v0.11.0/control-plane-components.yaml"
+            type: "ControlPlaneProvider"
+          EOF
+
+      - name: "Install CAPI stack with kubevirt as infra and kamaji as controlplane providers"
+        run: |
+          clusterctl init --infrastructure kubevirt --control-plane kamaji
+
+          kubectl wait deploy -n kamaji-system capi-kamaji-controller-manager --for=condition=Available --timeout=10m
+          kubectl wait deploy -n capi-kubeadm-bootstrap-system capi-kubeadm-bootstrap-controller-manager  --for=condition=Available --timeout=10m
+          kubectl wait deploy -n capi-system capi-controller-manager  --for=condition=Available --timeout=10m
+          IMAGE=$(kubectl get deploy -n kamaji-system capi-kamaji-controller-manager -o yaml | grep image | grep $GITHUB_SHA)
+          if [[ $IMAGE != *"$GITHUB_SHA"* ]]; then
+            echo "Not using the expected PR image"
+            exit 1
+          fi
+
+      - name: "Deploy target cluster"
+        run: |
+            kubectl apply -f .github/workflows/targetcluster-controlplane.yaml
+            kubectl wait cluster capi-quickstart --for=condition=InfrastructureReady --timeout=10m
+            kubectl wait kamajicontrolplane capi-quickstart-kubevirt --for=condition=KamajiControlPlaneIsReady --timeout=10m
+
+            kubectl apply -f .github/workflows/targetcluster-workers.yaml
+
+            sleep 30 # sleep for 30sec to machine CR to be created
+
+            # wait for kubevirt pod and corresponding capi machine
+            kubectl wait machine -l cluster.x-k8s.io/cluster-name=capi-quickstart --for=condition=InfrastructureReady --timeout=10m
+            kubectl wait pod -l cluster.x-k8s.io/cluster-name=capi-quickstart --for=condition=Ready --timeout=10m
+
+      - name: "Test target cluster"
+        run: |
+            kubectl get secret capi-quickstart-kubevirt-admin-kubeconfig -o json \
+            | jq -r '.data["admin.conf"]' \
+            | base64 --decode \
+            > targetcluster.kubeconfig
+
+            export KUBECONFIG=targetcluster.kubeconfig
+            kubectl get pods -A
+            kubectl get nodes
+            kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+            sleep 30
+            kubectl get pods -A
+            kubectl wait nodes -l kubernetes.io/os=linux --for=condition=Ready
