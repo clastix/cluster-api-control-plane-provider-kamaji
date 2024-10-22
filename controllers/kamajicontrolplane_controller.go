@@ -165,7 +165,22 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, nil //nolint:nilerr
 	}
+	// Starting from CAPI v1.8, the ControlPlane provider can set the Control Plane endpoint:
+	// this will make useless the patchCluster function in the future.
+	// More info: https://release-1-8.cluster-api.sigs.k8s.io/developer/providers/control-plane#optional-spec-fields-for-implementations-providing-endpoints
+	TrackConditionType(&conditions, kcpv1alpha1.ControlPlaneEndpointPatchedConditionType, kcp.Generation, func() error {
+		err = r.patchControlPlaneEndpoint(ctx, &kcp, tcp.Status.ControlPlaneEndpoint)
 
+		return err
+	})
+
+	if err != nil {
+		log.Error(err, "cannot patch kcpv1alpha1.KamajiControlPlane")
+
+		return ctrl.Result{}, err
+	}
+	// Patching the Infrastructure Cluster:
+	// this will be removed on the upcoming Kamaji Control Plane versions.
 	TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
 		err = r.patchCluster(ctx, cluster, tcp.Status.ControlPlaneEndpoint)
 
@@ -177,7 +192,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, err
 	}
-	// Before continuing the Cluster object needs some validation, such as:
+	// Before continuing, the Cluster object needs some validation, such as:
 	// 1. an assigned Control Plane endpoint
 	// 2. a ready infrastructure
 	if len(cluster.Spec.ControlPlaneEndpoint.Host) == 0 {

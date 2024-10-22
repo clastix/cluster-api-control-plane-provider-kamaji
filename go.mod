@@ -14,7 +14,7 @@ require (
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
 	k8s.io/component-base v0.31.1
-	sigs.k8s.io/cluster-api v1.6.4
+	sigs.k8s.io/cluster-api v1.8.4
 	sigs.k8s.io/controller-runtime v0.19.0
 )
 
@@ -23,7 +23,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
+	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -54,7 +54,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.26.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
@@ -91,6 +91,7 @@ replace (
 	k8s.io/component-helpers => k8s.io/component-helpers v0.31.1
 	k8s.io/controller-manager => k8s.io/controller-manager v0.31.1
 	k8s.io/cri-api => k8s.io/cri-api v0.31.1
+	k8s.io/cri-client => k8s.io/cri-client v0.31.1
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.31.1
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.31.1
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.31.1

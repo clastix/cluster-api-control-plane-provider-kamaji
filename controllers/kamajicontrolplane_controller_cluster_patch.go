@@ -13,9 +13,41 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 )
+
+func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
+	endpoint, strPort, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		return errors.Wrap(err, "cannot split the Kamaji endpoint host port pair")
+	}
+
+	port, pErr := strconv.ParseInt(strPort, 10, 16)
+	if pErr != nil {
+		return errors.Wrap(pErr, "cannot convert port to integer")
+	}
+
+	if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if scopedErr := r.client.Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane); scopedErr != nil {
+			return errors.Wrap(scopedErr, "cannot retrieve *v1alpha1.KamajiControlPlane")
+		}
+
+		controlPlane.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
+			Host: endpoint,
+			Port: int32(port),
+		}
+
+		return r.client.Update(ctx, controlPlane) //nolint:wrapcheck
+	}); err != nil {
+		return errors.Wrap(err, "cannot update KamajiControlPlane with ControlPlaneEndpoint")
+	}
+
+	return nil
+}
 
 //nolint:cyclop
 func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta1.Cluster, hostPort string) error {

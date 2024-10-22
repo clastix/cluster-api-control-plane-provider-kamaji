@@ -8,6 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // ControlPlaneComponent allows the customization for the given component of the control plane.
@@ -76,6 +77,8 @@ type CoreDNSAddonSpec struct {
 // KamajiControlPlaneSpec defines the desired state of KamajiControlPlane.
 type KamajiControlPlaneSpec struct {
 	KamajiControlPlaneFields `json:",inline"`
+	// ControlPlaneEndpoint propagates the endpoint the Kubernetes API Server managed by Kamaji is located.
+	ControlPlaneEndpoint capiv1beta1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 	// Number of desired replicas for the given TenantControlPlane.
 	// Defaults to 2.
 	// +kubebuilder:default=2
