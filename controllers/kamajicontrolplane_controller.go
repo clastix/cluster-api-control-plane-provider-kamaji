@@ -46,7 +46,7 @@ type KamajiControlPlaneReconciler struct {
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kamajicontrolplanes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
 
-func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop,maintidx,gocognit
+func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:funlen,cyclop,maintidx,gocognit,gocyclo
 	var err error
 
 	now, log := time.Now(), ctrllog.FromContext(ctx)
