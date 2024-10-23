@@ -124,11 +124,11 @@ jobs:
 
       - name: "Deploy target cluster"
         run: |
-            kubectl apply -f .github/workflows/targetcluster-controlplane.yaml
+            kubectl apply -f .github/workflows/assets/targetcluster-controlplane.yaml
             kubectl wait cluster capi-quickstart --for=condition=InfrastructureReady --timeout=10m
             kubectl wait kamajicontrolplane capi-quickstart-kubevirt --for=condition=KamajiControlPlaneIsReady --timeout=10m
 
-            kubectl apply -f .github/workflows/targetcluster-workers.yaml
+            kubectl apply -f .github/workflows/assets/targetcluster-workers.yaml
 
             sleep 30 # sleep for 30sec to machine CR to be created
 
