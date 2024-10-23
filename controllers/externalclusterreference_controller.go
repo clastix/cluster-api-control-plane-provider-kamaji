@@ -127,9 +127,14 @@ func (r *ExternalClusterReferenceReconciler) SetupWithManager(mgr ctrl.Manager) 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Secret{}).
 		Watches(&v1alpha1.KamajiControlPlane{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, object client.Object) []reconcile.Request {
+			kcp := object.(*v1alpha1.KamajiControlPlane) //nolint:forcetypeassert
+			if kcp.Spec.Deployment.ExternalClusterReference == nil {
+				return nil
+			}
+
 			var requests []reconcile.Request
 
-			for _, secret := range r.getSecretFromKamajiControlPlaneReferences(ctx, object.(*v1alpha1.KamajiControlPlane)) { //nolint:forcetypeassert
+			for _, secret := range r.getSecretFromKamajiControlPlaneReferences(ctx, kcp) {
 				requests = append(requests, reconcile.Request{
 					NamespacedName: types.NamespacedName{
 						Namespace: secret.Namespace,
