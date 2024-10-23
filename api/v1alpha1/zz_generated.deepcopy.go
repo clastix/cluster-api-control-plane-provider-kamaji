@@ -293,6 +293,7 @@ func (in *KamajiControlPlaneList) DeepCopyObject() runtime.Object {
 func (in *KamajiControlPlaneSpec) DeepCopyInto(out *KamajiControlPlaneSpec) {
 	*out = *in
 	in.KamajiControlPlaneFields.DeepCopyInto(&out.KamajiControlPlaneFields)
+	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
 		*out = new(int32)
