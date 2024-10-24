@@ -13341,11 +13341,19 @@ rules:
   - hetznerclusters
   - ionoscloudclusters
   - kubevirtclusters
-  - kubevirtclusters/status
   - nutanixclusters
-  - nutanixclusters/status
   - openstackclusters
   - packetclusters
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - kubevirtclusters/status
+  - nutanixclusters/status
   - packetclusters/status
   verbs:
   - patch

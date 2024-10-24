@@ -13,9 +13,11 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"k8s.io/component-base/featuregate"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -99,6 +101,11 @@ func main() {
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Port: 9443, //nolint:gomnd
 		}),
+		NewClient: func(config *rest.Config, options client.Options) (client.Client, error) {
+			options.Cache.Unstructured = true
+
+			return client.New(config, options) //nolint:wrapcheck
+		},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "kamaji.controlplane.cluster.x-k8s.io",
