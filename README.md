@@ -60,33 +60,6 @@ Before the next steps, make sure the initial setup for development environment s
 Versioning adheres to the [Semantic Versioning](http://semver.org/) principles.
 A full list of the available release is available in the GitHub repository's [**Release** section](https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases).
 
-### 📄 Compatibility matrix
-
-The Control Plane provider has several dependencies, such as Cluster API and Kamaji.
-
-The following compatibility matrix is useful to match them according to the Control Plane provider version you're planning to run.
-
-| CP provider | Cluster API            | Kamaji  | TCP API version |
-|-------------|------------------------|---------|-----------------|
-| v0.10.x     | v1.5.x, v1.6.x, v1.7.x | ~v1.0.x | `v1alpha1`      |
-| v0.10.x     | v1.5.x, v1.6.x, v1.7.x | ~v1.0.x | `v1alpha1`      |
-| v0.9.0      | v1.5.x, v1.6.x         | ~v0.6.x | `v1alpha1`      |
-| v0.8.0      | v1.5.x, v1.6.x         | ~v0.5.x | `v1alpha1`      |
-| v0.7.x      | v1.5.x, v1.6.x         | ~v0.4.0 | `v1alpha1`      |
-| v0.6.0      | v1.5.x, v1.6.x         | ~v0.4.0 | `v1alpha1`      |
-| v0.5.0      | v1.5.x                 | ~v0.4.0 | `v1alpha1`      |
-| v0.4.2      | v1.5.x                 | ~v0.3.2 | `v1alpha1`      |
-| v0.4.1      | v1.5.x                 | ~v0.3.2 | `v1alpha1`      |
-| v0.4.0      | v1.5.x                 | ~v0.3.2 | `v1alpha1`      |
-| v0.3.1      | v1.5.x                 | ~v0.3.2 | `v1alpha1`      |
-| v0.3.0      | v1.5.x                 | ~v0.3.2 | `v1alpha1`      |
-| v0.2.2      | v1.5.x                 | ~v0.3.2 | `v1alpha1`      |
-| v0.2.1      | v1.5.x                 | v0.3.1  | `v1alpha1`      |
-| v0.2.0      | v1.4.x                 | v0.3.x  | `v1alpha1`      |
-| v0.2.0      | v1.4.x                 | v0.3.x  | `v1alpha1`      |
-| v0.1.1      | v1.4.x                 | v0.3.x  | `v1alpha1`      |
-| v0.1.0      | v1.4.x                 | v0.3.x  | `v1alpha1`      |
-
 ### 🤝 Contributions
 
 Contributions are highly appreciated and very welcomed!
@@ -102,6 +75,16 @@ Commits are used to generate the changelog, and their author will be referenced 
 
 The Kamaji Cluster API Control Plane provider is licensed under Apache 2.0.
 The code is provided as-is with no warranties.
+
+### 📄 Kamaji compatibility
+
+As of July 2024, CLASTIX Labs organisation does no longer provide stable release artefacts in favour of [edge releases](https://kamaji.clastix.io/reference/versioning/#edge-releases).
+
+Although CLASTIX Labs strives to provide production-grade artefacts even for edge releases,
+starting from v0.12.0 the Kamaji Cluster API Control Plane provider will not use a stable version pinning in favour of edge releases.
+
+To ensure a perfect compatibility and a production grade implementation between Kamaji and the Cluster API Control Plane provider,
+we suggest getting in touch with CLASTIX Labs to achieve commercial support.
 
 ### 🛟 Commercial Support
 
