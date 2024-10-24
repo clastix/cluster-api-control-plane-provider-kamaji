@@ -80,8 +80,8 @@ The code is provided as-is with no warranties.
 
 As of July 2024, CLASTIX Labs organisation does no longer provide stable release artefacts in favour of [edge releases](https://kamaji.clastix.io/reference/versioning/#edge-releases).
 
-Although CLASTIX Labs strives to provide production-ready artefacts even for edge releases,
-starting from v0.12.0 the Kamaji Cluster API Control Plane provider will not use a direct version pinning in favour of a specific commit reference.
+Although CLASTIX Labs strives to provide production-grade artefacts even for edge releases,
+starting from v0.12.0 the Kamaji Cluster API Control Plane provider will not use a stable version pinning in favour of edge releases.
 
 To ensure a perfect compatibility and a production grade implementation between Kamaji and the Cluster API Control Plane provider,
 we suggest getting in touch with CLASTIX Labs to achieve commercial support.
