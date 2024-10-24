@@ -182,7 +182,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Patching the Infrastructure Cluster:
 	// this will be removed on the upcoming Kamaji Control Plane versions.
 	TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
-		err = r.patchCluster(ctx, cluster, tcp.Status.ControlPlaneEndpoint)
+		err = r.patchCluster(ctx, cluster, &kcp, tcp.Status.ControlPlaneEndpoint)
 
 		return err
 	})

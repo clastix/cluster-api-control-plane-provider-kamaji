@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,15 +21,38 @@ import (
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 )
 
-func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
-	endpoint, strPort, err := net.SplitHostPort(hostPort)
+func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alpha1.KamajiControlPlane, statusEndpoint string) (string, int64, error) {
+	endpoint, strPort, err := net.SplitHostPort(statusEndpoint)
 	if err != nil {
-		return errors.Wrap(err, "cannot split the Kamaji endpoint host port pair")
+		return "", 0, errors.Wrap(err, "cannot split the Kamaji endpoint host port pair")
 	}
 
 	port, pErr := strconv.ParseInt(strPort, 10, 16)
 	if pErr != nil {
-		return errors.Wrap(pErr, "cannot convert port to integer")
+		return "", 0, errors.Wrap(pErr, "cannot convert port to integer")
+	}
+
+	if ingress := controlPlane.Spec.Network.Ingress; ingress != nil {
+		if len(strings.Split(ingress.Hostname, ":")) == 1 {
+			ingress.Hostname += ":443"
+		}
+
+		if endpoint, strPort, err = net.SplitHostPort(ingress.Hostname); err != nil {
+			return "", 0, errors.Wrap(err, "cannot split the Kamaji Ingress hostname host port pair")
+		}
+
+		if port, pErr = strconv.ParseInt(strPort, 10, 64); pErr != nil {
+			return "", 0, errors.Wrap(pErr, "cannot convert Kamaji Ingress hostname port pair")
+		}
+	}
+
+	return endpoint, port, nil
+}
+
+func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
+	endpoint, port, err := r.controlPlaneEndpoint(controlPlane, hostPort)
+	if err != nil {
+		return errors.Wrap(err, "cannot retrieve ControlPlaneEndpoint")
 	}
 
 	if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -50,19 +74,14 @@ func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Con
 }
 
 //nolint:cyclop
-func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta1.Cluster, hostPort string) error {
+func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta1.Cluster, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
 	if cluster.Spec.InfrastructureRef == nil {
 		return errors.New("capiv1beta1.Cluster has no InfrastructureRef")
 	}
 
-	endpoint, strPort, err := net.SplitHostPort(hostPort)
+	endpoint, port, err := r.controlPlaneEndpoint(controlPlane, hostPort)
 	if err != nil {
-		return errors.Wrap(err, "cannot split the Kamaji endpoint host port pair")
-	}
-
-	port, err := strconv.ParseInt(strPort, 10, 64)
-	if err != nil {
-		return errors.Wrap(err, "cannot convert Kamaji endpoint port pair")
+		return errors.Wrap(err, "cannot retrieve ControlPlaneEndpoint")
 	}
 
 	switch cluster.Spec.InfrastructureRef.Kind {
