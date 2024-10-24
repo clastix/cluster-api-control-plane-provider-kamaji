@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.22.1
 
 require (
-	github.com/clastix/kamaji v1.0.1-0.20241006074020-7e08b9a7cede
+	github.com/clastix/kamaji v1.0.1-0.20241021192153-9ca69e91f9c9
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/pkg/errors v0.9.1

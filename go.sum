@@ -4,8 +4,8 @@ github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
-github.com/clastix/kamaji v1.0.1-0.20241006074020-7e08b9a7cede h1:V4dCIQ1DGfAXEv/cutBVs1Ta+j/pObc5q0vwbshiEZU=
-github.com/clastix/kamaji v1.0.1-0.20241006074020-7e08b9a7cede/go.mod h1:RR+/jF13HXayXx85vif+pFFBWQLV8ks4dLj1AXTos6s=
+github.com/clastix/kamaji v1.0.1-0.20241021192153-9ca69e91f9c9 h1:HAZdvF+CFYeU0WRiqqh8ScmlS2RGnh597M3N2BafIvA=
+github.com/clastix/kamaji v1.0.1-0.20241021192153-9ca69e91f9c9/go.mod h1:RR+/jF13HXayXx85vif+pFFBWQLV8ks4dLj1AXTos6s=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -72,6 +72,8 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			if podsCIDR := cluster.Spec.ClusterNetwork.Pods; podsCIDR != nil && len(podsCIDR.CIDRBlocks) > 0 {
 				tcp.Spec.NetworkProfile.PodCIDR = podsCIDR.CIDRBlocks[0]
 			}
+			// TenantControlPlane cluster domain
+			tcp.Spec.NetworkProfile.ClusterDomain = cluster.Spec.ClusterNetwork.ServiceDomain
 			// Replicas
 			tcp.Spec.ControlPlane.Deployment.Replicas = kcp.Spec.Replicas
 			// Version
