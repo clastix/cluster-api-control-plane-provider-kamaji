@@ -10,6 +10,7 @@ import (
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -41,6 +42,16 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			if tcp.Annotations == nil {
 				tcp.Annotations = make(map[string]string)
 			}
+
+			for k, v := range kcp.Annotations {
+				if k == corev1.LastAppliedConfigAnnotation {
+					continue
+				}
+
+				tcp.Annotations[k] = v
+			}
+
+			tcp.Labels = kcp.Labels
 
 			if kubeconfigSecretKey := kcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation]; kubeconfigSecretKey != "" {
 				tcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation] = kubeconfigSecretKey
