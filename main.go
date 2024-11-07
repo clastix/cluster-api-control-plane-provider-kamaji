@@ -63,6 +63,11 @@ func main() {
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
 		},
+		features.SkipInfraClusterPatch: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
 	}); err != nil {
 		setupLog.Error(err, "unable to add feature gates")
 		os.Exit(1)

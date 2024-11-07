@@ -30,6 +30,7 @@ import (
 
 	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
 )
 
 // KamajiControlPlaneReconciler reconciles a KamajiControlPlane object.
@@ -179,19 +180,39 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, err
 	}
-	// Patching the Infrastructure Cluster:
-	// this will be removed on the upcoming Kamaji Control Plane versions.
-	TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
-		err = r.patchCluster(ctx, cluster, &kcp, tcp.Status.ControlPlaneEndpoint)
 
-		return err
-	})
+	// We need to fetch the updated cluster resource here because otherwise the cluster.spec.controlPlaneEndpoint.Host
+	// check that happens latter will never succeed.
+	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("capiv1beta1.Cluster resource may have been deleted, withdrawing reconciliation")
 
-	if err != nil {
-		log.Error(err, "cannot patch capiv1beta1.Cluster")
+			return ctrl.Result{}, nil
+		}
 
-		return ctrl.Result{}, err
+		log.Error(err, "unable to get capiv1beta1.Cluster")
+
+		return ctrl.Result{}, err //nolint:wrapcheck
 	}
+
+	// The following code path will be skipped when the InfraClusterOptional=true. This enables
+	// the use of a KamajiControlPlane without an infrastructure cluster.
+	if !r.FeatureGates.Enabled(features.SkipInfraClusterPatch) {
+		// Patching the Infrastructure Cluster:
+		// this will be removed on the upcoming Kamaji Control Plane versions.
+		TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
+			err = r.patchCluster(ctx, cluster, &kcp, tcp.Status.ControlPlaneEndpoint)
+
+			return err
+		})
+
+		if err != nil {
+			log.Error(err, "cannot patch capiv1beta1.Cluster")
+
+			return ctrl.Result{}, err
+		}
+	}
+
 	// Before continuing, the Cluster object needs some validation, such as:
 	// 1. an assigned Control Plane endpoint
 	// 2. a ready infrastructure
@@ -288,7 +309,6 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
 			kcp.Status.Ready = *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady || *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionUpgrading
 		})
-
 		if err != nil {
 			return err
 		}
