@@ -11,4 +11,7 @@ const (
 	// ExternalClusterReferenceCrossNamespace allows deploying Tenant Control Plane pods to a different cluster from the Management one.
 	// It supports referencing a kubeconfig available in a different Namespace than the KamajiControlPlane.
 	ExternalClusterReferenceCrossNamespace = "ExternalClusterReferenceCrossNamespace"
+
+	// SkipInfraClusterPatch bypasses patching the InfraCluster with the control-plane endpoint.
+	SkipInfraClusterPatch = "SkipInfraClusterPatch"
 )
