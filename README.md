@@ -25,18 +25,19 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 
 ### 🚀 Supported CAPI infrastructure providers
 
-| Infrastructure Provider                                                                                                                 | Version           |
-|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------|
-| [AWS](https://github.com/kubernetes-sigs/cluster-api-provider-aws) ([technical considerations](docs/providers-aws.md))                  | += v2.4.0         |
-| [Equinix/Packet](https://github.com/kubernetes-sigs/cluster-api-provider-packet) ([technical considerations](docs/providers-packet.md)) | += v0.7.2         |
-| [Hetzner](https://github.com/syself/cluster-api-provider-hetzner)([technical considerations](docs/providers-hetzner.md))                | += v1.0.0-beta.30 |
-| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md))   | += 0.1.7          |
-| [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))               | += 1.4.0          |
-| [Nutanix](https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix) ([technical considerations](docs/providers-nutanix.md)) | += 1.2.4          |
-| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack) ([technical considerations](docs/providers-openstack.md))                                                          | += 0.8.0          |
-| [Tinkerbell](https://github.com/tinkerbell/cluster-api-provider-tinkerbell) ([technical considerations](docs/providers-tinkerbell.md))  | += v0.5.2         |
-| [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))      | += 1.7.0          |
-| [IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud) ([technical considerations](docs/providers-ionoscloud.md)) | += v0.3.0        |
+| Infrastructure Provider                                                                                                                       | Version           |
+|-----------------------------------------------------------------------------------------------------------------------------------------------|-------------------|
+| [AWS](https://github.com/kubernetes-sigs/cluster-api-provider-aws) ([technical considerations](docs/providers-aws.md))                        | += v2.4.0         |
+| [Equinix/Packet](https://github.com/kubernetes-sigs/cluster-api-provider-packet) ([technical considerations](docs/providers-packet.md))       | += v0.7.2         |
+| [Hetzner](https://github.com/syself/cluster-api-provider-hetzner)([technical considerations](docs/providers-hetzner.md))                      | += v1.0.0-beta.30 |
+| [KubeVirt](https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt) ([technical considerations](docs/providers-kubevirt.md))         | += 0.1.7          |
+| [Metal³](https://github.com/metal3-io/cluster-api-provider-metal3) ([technical considerations](docs/providers-metal3.md))                     | += 1.4.0          |
+| [Nutanix](https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix) ([technical considerations](docs/providers-nutanix.md))       | += 1.2.4          |
+| [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack) ([technical considerations](docs/providers-openstack.md))      | += 0.8.0          |
+| [Tinkerbell](https://github.com/tinkerbell/cluster-api-provider-tinkerbell) ([technical considerations](docs/providers-tinkerbell.md))        | += v0.5.2         |
+| [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))            | += 1.7.0          |
+| [IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud) ([technical considerations](docs/providers-ionoscloud.md))      | += v0.3.0         |
+| [Proxmox by IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-proxmox) ([technical considerations](docs/providers-proxmox.md)) | unreleased        |
 
 > Are you looking for further integrations?
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
