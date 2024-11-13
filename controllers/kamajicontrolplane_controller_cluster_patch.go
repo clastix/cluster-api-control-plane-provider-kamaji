@@ -226,11 +226,12 @@ func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context
 		return errors.Wrap(err, "unable to create patch helper")
 	}
 
-	if err = unstructured.SetNestedMap(osc.Object, map[string]interface{}{
-		"apiServerFixedIP": endpoint,
-		"apiServerPort":    port,
-	}, "spec"); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec patch", osc.GetKind()))
+	if err = unstructured.SetNestedField(osc.Object, endpoint, "spec", "apiServerFixedIP"); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec apiServerFixedIP", osc.GetKind()))
+	}
+
+	if err = unstructured.SetNestedField(osc.Object, port, "spec", "apiServerPort"); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec apiServerPort", osc.GetKind()))
 	}
 
 	if err = patchHelper.Patch(ctx, &osc); err != nil {
