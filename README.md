@@ -38,6 +38,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 | [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))            | += 1.7.0          |
 | [IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud) ([technical considerations](docs/providers-ionoscloud.md))      | += v0.3.0         |
 | [Proxmox by IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-proxmox) ([technical considerations](docs/providers-proxmox.md)) | unreleased        |
+| [Azure](https://github.com/kubernetes-sigs/cluster-api-provider-azure) ([technical considerations](docs/providers-azure.md))                  | += v1.18.0        |
 
 > Are you looking for further integrations?
 > Please, engage with the community on the [#kamaji](https://kubernetes.slack.com/archives/C03GLTTMWNN) Kubernetes Slack
