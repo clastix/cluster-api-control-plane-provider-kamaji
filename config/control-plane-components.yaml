@@ -13482,7 +13482,7 @@ spec:
         - --feature-gates=ExternalClusterReference=${CACPPK_EXTERNAL_CLUSTER_REFERENCE:=false},ExternalClusterReferenceCrossNamespace=${CACPPK_EXTERNAL_CLUSTER_REFERENCE_CROSS_NAMESPACE:=false},SkipInfraClusterPatch=${CACPPK_SKIP_INFRA_CLUSTER_PATCH:=false}
         command:
         - /manager
-        image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.12.0
+        image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.13.0
         livenessProbe:
           httpGet:
             path: /healthz
