@@ -13338,6 +13338,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - awsclusters
+  - azureclusters
   - hetznerclusters
   - ionoscloudclusters
   - kubevirtclusters
