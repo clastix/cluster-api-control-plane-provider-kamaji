@@ -166,7 +166,6 @@ spec:
 
 ## Technical considerations
 
-The Cluster API Azure infrastructure provider supports starting from [v1.13.0](https://github.com/kubernetes-sigs/cluster-api-provider-azure).
-The Azure Cluster API operator will create some additional network components for the control plane which are not needed but do not hinder the cluster from working.
+The Cluster API Azure infrastructure provider supports starting from [v1.18.0](https://github.com/kubernetes-sigs/cluster-api-provider-azure/milestone/40).
 
 Once the cluster has been provisioned, you need to install the [Azure Cloud Controller Manager](https://github.com/kubernetes-sigs/cloud-provider-azure).
