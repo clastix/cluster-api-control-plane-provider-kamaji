@@ -36,7 +36,8 @@ func (r *KamajiControlPlaneReconciler) extractRemoteClient(ctx context.Context, 
 		return nil, ErrExternalClusterReferenceNotEnabled
 	}
 
-	if r.FeatureGates.Enabled(features.ExternalClusterReference) &&
+	if r.FeatureGates.Enabled(features.ExternalClusterReference) && 
+		!r.FeatureGates.Enabled(features.ExternalClusterReferenceCrossNamespace) &&
 		kcp.Spec.Deployment.ExternalClusterReference.KubeconfigSecretNamespace != "" &&
 		kcp.Spec.Deployment.ExternalClusterReference.KubeconfigSecretNamespace != kcp.Namespace {
 		return nil, ErrExternalClusterReferenceCrossNamespaceReference
