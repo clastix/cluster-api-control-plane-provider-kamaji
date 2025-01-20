@@ -126,7 +126,7 @@ func main() {
 		ExternalClusterReferenceStore: ecrStore,
 		FeatureGates:                  featureGate,
 		MaxConcurrentReconciles:       maxConcurrentReconciles,
-	}).SetupWithManager(mgr, triggerChannel); err != nil {
+	}).SetupWithManager(ctx, mgr, triggerChannel); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KamajiControlPlane")
 		os.Exit(1)
 	}

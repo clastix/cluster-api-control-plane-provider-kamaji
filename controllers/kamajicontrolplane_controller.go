@@ -18,6 +18,8 @@ import (
 	"k8s.io/client-go/util/retry"
 	"k8s.io/component-base/featuregate"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/annotations"
+	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,11 +76,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, nil
 	}
-	// Handling finalizer for external deployment:
-	// in case of ExternalClusterReference the remote TCP must be deleted.
-	if kcp.DeletionTimestamp != nil {
-		return r.handleDeletion(ctx, kcp)
-	}
+
 	// Retrieving the Cluster information
 	cluster := capiv1beta1.Cluster{}
 	cluster.SetName(kcp.GetOwnerReferences()[0].Name)
@@ -95,6 +93,20 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
+
+	// Return early if the object or Cluster is paused.
+	if annotations.IsPaused(&cluster, &kcp) {
+		log.Info("Reconciliation is paused for this object")
+
+		return ctrl.Result{}, nil
+	}
+
+	// Handling finalizer for external deployment:
+	// in case of ExternalClusterReference the remote TCP must be deleted.
+	if kcp.DeletionTimestamp != nil {
+		return r.handleDeletion(ctx, kcp)
+	}
+
 	// Extracting conditions, used to update the KamajiControlPlane ones upon the end of the reconciliation.
 	conditions := kcp.Status.Conditions
 
@@ -355,16 +367,16 @@ func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx contex
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KamajiControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager, channel chan event.GenericEvent) error {
+func (r *KamajiControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, channel chan event.GenericEvent) error {
 	r.client = mgr.GetClient()
-
 	ctrlBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&kcpv1alpha1.KamajiControlPlane{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			return len(object.GetOwnerReferences()) > 0
 		}))).
 		Owns(&corev1.Secret{}).
 		WatchesRawSource(source.Channel(channel, &handler.EnqueueRequestForObject{})).
-		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
+		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
+		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx)))
 
 	cs, csErr := kubernetes.NewForConfig(mgr.GetConfig())
 	if csErr != nil {
