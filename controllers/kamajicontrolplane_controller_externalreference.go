@@ -31,11 +31,11 @@ var (
 
 //nolint:cyclop
 func (r *KamajiControlPlaneReconciler) extractRemoteClient(ctx context.Context, kcp v1alpha1.KamajiControlPlane) (client.Client, error) { //nolint:ireturn
-	if !r.FeatureGates.Enabled(features.ExternalClusterReference)  {
+	if !r.FeatureGates.Enabled(features.ExternalClusterReference) {
 		return nil, ErrExternalClusterReferenceNotEnabled
 	}
 
-	if r.FeatureGates.Enabled(features.ExternalClusterReference) && 
+	if r.FeatureGates.Enabled(features.ExternalClusterReference) &&
 		!r.FeatureGates.Enabled(features.ExternalClusterReferenceCrossNamespace) &&
 		kcp.Spec.Deployment.ExternalClusterReference.KubeconfigSecretNamespace != "" &&
 		kcp.Spec.Deployment.ExternalClusterReference.KubeconfigSecretNamespace != kcp.Namespace {
