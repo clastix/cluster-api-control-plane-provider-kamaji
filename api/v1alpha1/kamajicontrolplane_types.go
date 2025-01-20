@@ -69,8 +69,8 @@ type AddonsSpec struct {
 
 type CoreDNSAddonSpec struct {
 	*kamajiv1alpha1.AddonSpec `json:",inline"`
-	// +kubebuilder:default={"10.96.0.10"}
-	// +kubebuilder:validation:MinItems=1
+	// DNSServiceIPs contains the CoreDNS Service IPs.
+	// When set to an empty slice, Kamaji will automatically inflect it from the Service CIDR.
 	DNSServiceIPs []string `json:"dnsServiceIPs,omitempty"`
 }
 

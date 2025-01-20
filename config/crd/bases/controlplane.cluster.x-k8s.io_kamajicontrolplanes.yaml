@@ -72,11 +72,11 @@ spec:
                       The registry and the tag are configurable, the image is hard-coded to `coredns`.
                     properties:
                       dnsServiceIPs:
-                        default:
-                        - 10.96.0.10
+                        description: |-
+                          DNSServiceIPs contains the CoreDNS Service IPs.
+                          When set to an empty slice, Kamaji will automatically inflect it from the Service CIDR.
                         items:
                           type: string
-                        minItems: 1
                         type: array
                       imageRepository:
                         description: |-
