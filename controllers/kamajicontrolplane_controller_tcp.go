@@ -58,22 +58,22 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			} else {
 				delete(tcp.Annotations, kamajiv1alpha1.KubeconfigSecretKeyAnnotation)
 			}
-			// TenantControlPlane port
-			if apiPort := cluster.Spec.ClusterNetwork.APIServerPort; apiPort != nil {
-				tcp.Spec.NetworkProfile.Port = *apiPort
-			} else {
-				tcp.Spec.NetworkProfile.Port = 6443
+			if cluster.Spec.ClusterNetwork != nil {
+				// TenantControlPlane port
+				if apiPort := cluster.Spec.ClusterNetwork.APIServerPort; apiPort != nil {
+					tcp.Spec.NetworkProfile.Port = *apiPort
+				}
+				// TenantControlPlane Services CIDR
+				if serviceCIDR := cluster.Spec.ClusterNetwork.Services; serviceCIDR != nil && len(serviceCIDR.CIDRBlocks) > 0 {
+					tcp.Spec.NetworkProfile.ServiceCIDR = serviceCIDR.CIDRBlocks[0]
+				}
+				// TenantControlPlane Pods CIDR
+				if podsCIDR := cluster.Spec.ClusterNetwork.Pods; podsCIDR != nil && len(podsCIDR.CIDRBlocks) > 0 {
+					tcp.Spec.NetworkProfile.PodCIDR = podsCIDR.CIDRBlocks[0]
+				}
+				// TenantControlPlane cluster domain
+				tcp.Spec.NetworkProfile.ClusterDomain = cluster.Spec.ClusterNetwork.ServiceDomain
 			}
-			// TenantControlPlane Services CIDR
-			if serviceCIDR := cluster.Spec.ClusterNetwork.Services; serviceCIDR != nil && len(serviceCIDR.CIDRBlocks) > 0 {
-				tcp.Spec.NetworkProfile.ServiceCIDR = serviceCIDR.CIDRBlocks[0]
-			}
-			// TenantControlPlane Pods CIDR
-			if podsCIDR := cluster.Spec.ClusterNetwork.Pods; podsCIDR != nil && len(podsCIDR.CIDRBlocks) > 0 {
-				tcp.Spec.NetworkProfile.PodCIDR = podsCIDR.CIDRBlocks[0]
-			}
-			// TenantControlPlane cluster domain
-			tcp.Spec.NetworkProfile.ClusterDomain = cluster.Spec.ClusterNetwork.ServiceDomain
 			// Replicas
 			tcp.Spec.ControlPlane.Deployment.Replicas = kcp.Spec.Replicas
 			// Version
