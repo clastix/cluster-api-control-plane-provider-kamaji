@@ -110,6 +110,10 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 	case "VSphereCluster":
 		return r.checkOrPatchGenericCluster(ctx, cluster, endpoint, port)
 	default:
+		if r.DynamicInfrastructureClusters.Has(cluster.Spec.InfrastructureRef.Kind) {
+			return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
+		}
+
 		return errors.New("unsupported infrastructure provider")
 	}
 }

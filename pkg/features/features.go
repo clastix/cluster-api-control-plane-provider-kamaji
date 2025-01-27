@@ -14,4 +14,8 @@ const (
 
 	// SkipInfraClusterPatch bypasses patching the InfraCluster with the control-plane endpoint.
 	SkipInfraClusterPatch = "SkipInfraClusterPatch"
+
+	// DynamicInfrastructureClusterPatch allows patching any generic InfraCluster with the control-plane endpoint
+	// provided by Kamaji.
+	DynamicInfrastructureClusterPatch = "DynamicInfrastructureClusterPatch"
 )

@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/component-base/featuregate"
@@ -40,6 +41,7 @@ type KamajiControlPlaneReconciler struct {
 	ExternalClusterReferenceStore externalclusterreference.Store
 	FeatureGates                  featuregate.FeatureGate
 	MaxConcurrentReconciles       int
+	DynamicInfrastructureClusters sets.Set[string]
 
 	client client.Client
 }
