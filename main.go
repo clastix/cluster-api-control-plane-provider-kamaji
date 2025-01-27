@@ -50,6 +50,22 @@ func main() {
 
 	flagSet := pflag.NewFlagSet("kamaji-control-plane-provider", pflag.ExitOnError)
 
+	flagSet.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flagSet.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flagSet.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flagSet.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent KamajiControlPlane reconciles which can be run")
+	// zap logging FlagSet
+	var goFlagSet flag.FlagSet
+
+	opts := zap.Options{Development: true}
+	opts.BindFlags(&goFlagSet)
+
+	flagSet.AddGoFlagSet(&goFlagSet)
+
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
 	featureGate := featuregate.NewFeatureGate()
 
 	if err := featureGate.Add(map[featuregate.Feature]featuregate.FeatureSpec{
@@ -75,20 +91,6 @@ func main() {
 
 	featureGate.AddFlag(flagSet)
 
-	flagSet.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flagSet.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flagSet.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flagSet.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent KamajiControlPlane reconciles which can be run")
-	// zap logging FlagSet
-	var goFlagSet flag.FlagSet
-
-	opts := zap.Options{Development: true}
-	opts.BindFlags(&goFlagSet)
-
-	flagSet.AddGoFlagSet(&goFlagSet)
-
 	if err := flagSet.Parse(os.Args[1:]); err != nil {
 		setupLog.Error(err, "unable to parse arguments")
 		os.Exit(1)
@@ -96,7 +98,7 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctx := ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
