@@ -13479,7 +13479,8 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=ExternalClusterReference=${CACPPK_EXTERNAL_CLUSTER_REFERENCE:=false},ExternalClusterReferenceCrossNamespace=${CACPPK_EXTERNAL_CLUSTER_REFERENCE_CROSS_NAMESPACE:=false},SkipInfraClusterPatch=${CACPPK_SKIP_INFRA_CLUSTER_PATCH:=false}
+        - --feature-gates=DynamicInfrastructureClusterPatch=${CACPPK_DYNAMIC_INFRASTRUCTURE_CLUSTER_PATCH:=false},ExternalClusterReference=${CACPPK_EXTERNAL_CLUSTER_REFERENCE:=false},ExternalClusterReferenceCrossNamespace=${CACPPK_EXTERNAL_CLUSTER_REFERENCE_CROSS_NAMESPACE:=false},SkipInfraClusterPatch=${CACPPK_SKIP_INFRA_CLUSTER_PATCH:=false}
+        - --dynamic-infrastructure-clusters=${CACPPK_INFRASTRUCTURE_CLUSTERS:= }
         command:
         - /manager
         image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.13.0

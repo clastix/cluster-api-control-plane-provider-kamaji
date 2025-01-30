@@ -8,9 +8,11 @@ import (
 	"os"
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
@@ -46,9 +48,30 @@ func init() {
 
 //nolint:funlen,cyclop
 func main() {
+	var dynamicInfraClusters []string
+
 	metricsAddr, enableLeaderElection, probeAddr, maxConcurrentReconciles := "", false, "", 1
 
 	flagSet := pflag.NewFlagSet("kamaji-control-plane-provider", pflag.ExitOnError)
+
+	flagSet.StringSliceVar(&dynamicInfraClusters, "dynamic-infrastructure-clusters", nil, "When the DynamicInfrastructureClusterPatch feature flag is enabled, "+
+		"allows specifying which Infrastructure Clusters can be dynamically patched. "+
+		"This feature is useful for developers of custom or non public Cluster API infrastructure providers.")
+	flagSet.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flagSet.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flagSet.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flagSet.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent KamajiControlPlane reconciles which can be run")
+	// zap logging FlagSet
+	var goFlagSet flag.FlagSet
+
+	opts := zap.Options{Development: true}
+	opts.BindFlags(&goFlagSet)
+
+	flagSet.AddGoFlagSet(&goFlagSet)
+
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	featureGate := featuregate.NewFeatureGate()
 
@@ -68,6 +91,11 @@ func main() {
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
 		},
+		features.DynamicInfrastructureClusterPatch: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
 	}); err != nil {
 		setupLog.Error(err, "unable to add feature gates")
 		os.Exit(1)
@@ -75,28 +103,17 @@ func main() {
 
 	featureGate.AddFlag(flagSet)
 
-	flagSet.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flagSet.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flagSet.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flagSet.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent KamajiControlPlane reconciles which can be run")
-	// zap logging FlagSet
-	var goFlagSet flag.FlagSet
-
-	opts := zap.Options{Development: true}
-	opts.BindFlags(&goFlagSet)
-
-	flagSet.AddGoFlagSet(&goFlagSet)
-
 	if err := flagSet.Parse(os.Args[1:]); err != nil {
 		setupLog.Error(err, "unable to parse arguments")
 		os.Exit(1)
 	}
 
-	ctx := ctrl.SetupSignalHandler()
+	if !featureGate.Enabled(features.DynamicInfrastructureClusterPatch) && len(dynamicInfraClusters) > 0 {
+		setupLog.Error(errors.New("cannot set dynamic infrastructure clusters when the feature flag is disabled"), "DynamicInfrastructureClusterPatch feature flag is disabled")
+		os.Exit(1)
+	}
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctx := ctrl.SetupSignalHandler()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
@@ -126,6 +143,7 @@ func main() {
 		ExternalClusterReferenceStore: ecrStore,
 		FeatureGates:                  featureGate,
 		MaxConcurrentReconciles:       maxConcurrentReconciles,
+		DynamicInfrastructureClusters: sets.New[string](dynamicInfraClusters...),
 	}).SetupWithManager(ctx, mgr, triggerChannel); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KamajiControlPlane")
 		os.Exit(1)
