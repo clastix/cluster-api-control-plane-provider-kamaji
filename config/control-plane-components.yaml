@@ -13345,6 +13345,9 @@ rules:
   - nutanixclusters
   - openstackclusters
   - packetclusters
+  - proxmoxclusters
+  - tinkerbellclusters
+  - vsphereclusters
   verbs:
   - get
   - list
@@ -13364,15 +13367,6 @@ rules:
   - metal3clusters
   verbs:
   - get
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - proxmoxclusters
-  - tinkerbellclusters
-  - vsphereclusters
-  verbs:
-  - get
-  - patch
 - apiGroups:
   - kamaji.clastix.io
   resources:
