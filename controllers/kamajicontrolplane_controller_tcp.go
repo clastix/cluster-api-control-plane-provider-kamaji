@@ -6,6 +6,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
@@ -19,6 +20,8 @@ import (
 	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 )
+
+var ErrUnsupportedCertificateSAN = errors.New("a certificate SAN must be made of host only with no port")
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
@@ -141,6 +144,15 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Service.ServiceType = kcp.Spec.Network.ServiceType
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Labels = kcp.Spec.Network.ServiceLabels
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Annotations = kcp.Spec.Network.ServiceAnnotations
+
+			for _, i := range kcp.Spec.Network.CertSANs {
+				// validating CertSANs as soon as possible to avoid github.com/clastix/kamaji/issues/679:
+				// nil err means the entry is in the form of <HOST>:<PORT> which is not accepted
+				if _, _, err := net.SplitHostPort(i); err == nil {
+					return errors.Wrap(ErrUnsupportedCertificateSAN, fmt.Sprintf("entry %s is invalid", i))
+				}
+			}
+
 			tcp.Spec.NetworkProfile.CertSANs = kcp.Spec.Network.CertSANs
 			// Ingress
 			if kcp.Spec.Network.Ingress != nil {
