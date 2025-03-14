@@ -1,0 +1,141 @@
+kind: ClusterClass
+apiVersion: cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_CLASS_NAME}'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  controlPlane:
+    namingStrategy:
+      # force the tenant control plane to have the same name as the cluster
+      template: "{{ .cluster.name }}"
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+      kind: KamajiControlPlaneTemplate
+      name: '${CLUSTER_CLASS_NAME}-kamaji-control-plane-template'
+      namespace: '${CLUSTER_CLASS_NAMESPACE}'
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: VSphereClusterTemplate
+      name: '${CLUSTER_CLASS_NAME}-vsphere-cluster-template'
+      namespace: '${CLUSTER_CLASS_NAMESPACE}'
+  workers:
+    machineDeployments:
+    - class: '${CLUSTER_CLASS_NAME}'
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: '${CLUSTER_CLASS_NAME}-kubeadm-config-template'
+            namespace: '${CLUSTER_CLASS_NAMESPACE}'
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: VSphereMachineTemplate
+            name: '${CLUSTER_CLASS_NAME}-vsphere-machine-template'
+            namespace: '${CLUSTER_CLASS_NAMESPACE}'
+---
+kind: KamajiControlPlaneTemplate
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: '${CLUSTER_CLASS_NAME}-kamaji-control-plane-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    metadata:
+      labels:
+        cni: calico
+    spec:
+      addons:
+        coreDNS: {}
+        konnectivity: {}
+        kubeProxy: {}
+      apiServer:
+        extraArgs:
+        - --cloud-provider=external
+      controllerManager:
+        extraArgs:
+        - --cloud-provider=external
+      dataStoreName: default
+      kubelet:
+        cgroupfs: systemd
+        preferredAddressTypes:
+        - InternalIP
+        - ExternalIP
+        - Hostname
+      network:
+        serviceType: LoadBalancer
+---
+kind: VSphereClusterTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_CLASS_NAME}-vsphere-cluster-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    spec:
+      identityRef:
+        kind: Secret
+        name: vsphere-secret
+      server: '${VSPHERE_SERVER}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+kind: KubeadmConfigTemplate
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_CLASS_NAME}-kubeadm-config-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    spec:
+      files:
+      - path: "/etc/cloud/cloud.cfg.d/99-custom.cfg"
+        content: "${CLOUD_INIT_CONFIG:-}"
+        owner: "root:root"
+        permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            cloud-provider: external
+            node-ip: '{{ ds.meta_data.local_ipv4 }}'
+          name: '{{ local_hostname }}'
+      preKubeadmCommands:
+      - hostnamectl set-hostname "{{ ds.meta_data.hostname }}"
+      - echo "::1         ipv6-localhost ipv6-loopback localhost6 localhost6.localdomain6" >/etc/hosts
+      - echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4" >>/etc/hosts
+      users:
+      - name: '${SSH_USER}'
+        sshAuthorizedKeys:
+        - '${SSH_AUTHORIZED_KEY}'
+        sudo: ALL=(ALL) NOPASSWD:ALL
+---
+kind: VSphereMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_CLASS_NAME}-vsphere-machine-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    spec:
+      cloneMode: linkedClone
+      datacenter: '${VSPHERE_DATACENTER}'
+      datastore: '${VSPHERE_DATASTORE}'
+      folder: '${VSPHERE_FOLDER}'
+      diskGiB: ${NODE_DISK_SIZE}
+      memoryMiB: ${NODE_MEMORY_SIZE}
+      numCPUs: ${NODE_CPU_COUNT}
+      network:
+        devices:
+        - dhcp4: true
+          nameservers:
+          - '${NAMESERVER}'
+          networkName: '${VSPHERE_NETWORK}'
+      os: Linux
+      powerOffMode: trySoft
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
+      server: '${VSPHERE_SERVER}'
+      storagePolicyName: '${VSPHERE_STORAGE_POLICY}'
+      template: '${MACHINE_TEMPLATE}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'

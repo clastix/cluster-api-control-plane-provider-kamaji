@@ -1,0 +1,441 @@
+kind: Cluster
+apiVersion: cluster.x-k8s.io/v1beta1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KamajiControlPlane
+    name: '${CLUSTER_NAME}'
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: VSphereCluster
+    name: '${CLUSTER_NAME}'
+---
+kind: VSphereCluster
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  identityRef:
+    kind: Secret
+    name: '${CLUSTER_NAME}-vsphere-secret'
+  server: '${VSPHERE_SERVER}'
+  thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-vsphere-secret'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+stringData:
+  password: '${VSPHERE_PASSWORD}'
+  username: '${VSPHERE_USERNAME}'
+---
+kind: KamajiControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+    cni: calico
+spec:
+  apiServer:
+    extraArgs:
+      - --cloud-provider=external
+  controllerManager:
+    extraArgs:
+      - --cloud-provider=external
+  dataStoreName: default
+  addons:
+    coreDNS: {}
+    kubeProxy: {}
+    konnectivity: {}
+  kubelet:
+    cgroupfs: systemd
+    preferredAddressTypes:
+      - InternalIP
+      - ExternalIP
+      - Hostname
+  network:
+    serviceType: LoadBalancer
+  version: ${KUBERNETES_VERSION}
+---
+kind: KubeadmConfigTemplate
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            node-ip: '{{ ds.meta_data.local_ipv4 }}'
+            cloud-provider: external
+          name: '{{ local_hostname }}'
+      preKubeadmCommands:
+      - hostnamectl set-hostname "{{ ds.meta_data.hostname }}"
+      - echo "::1         ipv6-localhost ipv6-loopback localhost6 localhost6.localdomain6" >/etc/hosts
+      - echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4" >>/etc/hosts
+      files:
+      - path: "/etc/cloud/cloud.cfg.d/99-custom.cfg"
+        content: "${CLOUD_INIT_CONFIG:-}"
+        owner: "root:root"
+        permissions: "0644"
+      users:
+      - name: '${SSH_USER}'
+        sshAuthorizedKeys:
+        - '${SSH_AUTHORIZED_KEY}'
+        sudo: ALL=(ALL) NOPASSWD:ALL
+---
+kind: VSphereMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  template:
+    spec:
+      cloneMode: linkedClone
+      datacenter: '${VSPHERE_DATACENTER}'
+      datastore: '${VSPHERE_DATASTORE}'
+      folder: '${VSPHERE_FOLDER}'
+      diskGiB: ${NODE_DISK_SIZE}
+      memoryMiB: ${NODE_MEMORY_SIZE}
+      numCPUs: ${NODE_CPU_COUNT}
+      os: Linux
+      network:
+        devices:
+        - dhcp4: true
+          nameservers:
+          - '${NAMESERVER}'
+          networkName: '${VSPHERE_NETWORK}'
+      powerOffMode: trySoft
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
+      server: '${VSPHERE_SERVER}'
+      storagePolicyName: '${VSPHERE_STORAGE_POLICY}'
+      template: '${MACHINE_TEMPLATE}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+kind: MachineDeployment
+apiVersion: cluster.x-k8s.io/v1beta1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-md-0
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  clusterName: '${CLUSTER_NAME}'
+  replicas: ${MACHINE_DEPLOY_REPLICAS}
+  selector:
+    matchLabels: {}
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: '${CLUSTER_NAME}'
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: VSphereMachineTemplate
+        name: '${CLUSTER_NAME}'
+      version: '${KUBERNETES_VERSION}'
+---
+kind: ClusterResourceSet
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: '${CLUSTER_NAME}-crs-0'
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  strategy: Reconcile # ApplyOnce
+  resources:
+  - kind: Secret
+    name: '${CLUSTER_NAME}-cloud-provider-vsphere-credentials'
+  - kind: ConfigMap
+    name: '${CLUSTER_NAME}-cloud-controller-manager-service-account'
+  - kind: ConfigMap
+    name: '${CLUSTER_NAME}-cloud-controller-manager-cluster-role'
+  - kind: ConfigMap
+    name: '${CLUSTER_NAME}-cloud-controller-manager-role-binding'
+  - kind: ConfigMap
+    name: '${CLUSTER_NAME}-cloud-controller-manager-cluster-role-binding'
+  - kind: ConfigMap
+    name: '${CLUSTER_NAME}-vsphere-cpi-daemonset'
+  - kind: ConfigMap
+    name: '${CLUSTER_NAME}-vsphere-cloud-config'
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-cloud-provider-vsphere-credentials'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+type: addons.cluster.x-k8s.io/resource-set
+stringData:
+  data: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      labels:
+        component: cloud-controller-manager
+        vsphere-cpi-infra: secret
+      name: cloud-provider-vsphere-credentials
+      namespace: kube-system
+    stringData:
+      ${VSPHERE_SERVER}.username: "${VSPHERE_USERNAME}"
+      ${VSPHERE_SERVER}.password: "${VSPHERE_PASSWORD}"
+    type: Opaque
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-cloud-controller-manager-service-account'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+data:
+  data: |-
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: cloud-controller-manager
+      labels:
+        app: vsphere-cpi
+        vsphere-cpi-infra: service-account
+        component: cloud-controller-manager
+      namespace: kube-system
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-cloud-controller-manager-cluster-role'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+data:
+  data: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: cloud-controller-manager
+      labels:
+        app: vsphere-cpi
+        vsphere-cpi-infra: role
+        component: cloud-controller-manager
+    rules:
+      - apiGroups: [""]
+        resources: ["events"]
+        verbs: ["create", "patch", "update"]
+      - apiGroups: [""]
+        resources: ["nodes"]
+        verbs: ["*"]
+      - apiGroups: [""]
+        resources: ["nodes/status"]
+        verbs: ["patch"]
+      - apiGroups: [""]
+        resources: ["services"]
+        verbs: ["list", "patch", "update", "watch"]
+      - apiGroups: [""]
+        resources: ["services/status"]
+        verbs: ["patch"]
+      - apiGroups: [""]
+        resources: ["serviceaccounts"]
+        verbs: ["create", "get", "list", "watch", "update"]
+      - apiGroups: [""]
+        resources: ["persistentvolumes"]
+        verbs: ["get", "list", "update", "watch"]
+      - apiGroups: [""]
+        resources: ["endpoints"]
+        verbs: ["create", "get", "list", "watch", "update"]
+      - apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["coordination.k8s.io"]
+        resources: ["leases"]
+        verbs: ["create", "get", "list", "watch", "update"]
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-cloud-controller-manager-role-binding'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+data:
+  data: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      labels:
+        app: vsphere-cpi
+        component: cloud-controller-manager
+        vsphere-cpi-infra: role-binding
+      name: servicecatalog.k8s.io:apiserver-authentication-reader
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: extension-apiserver-authentication-reader
+    subjects:
+    - apiGroup: ""
+      kind: ServiceAccount
+      name: cloud-controller-manager
+      namespace: kube-system
+    - apiGroup: ""
+      kind: User
+      name: cloud-controller-manager
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-cloud-controller-manager-cluster-role-binding'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+data:
+  data: |-
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      labels:
+        app: vsphere-cpi
+        component: cloud-controller-manager
+        vsphere-cpi-infra: cluster-role-binding
+      name: cloud-controller-manager
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cloud-controller-manager
+    subjects:
+    - kind: ServiceAccount
+      name: cloud-controller-manager
+      namespace: kube-system
+    - kind: User
+      name: cloud-controller-manager
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-vsphere-cpi-daemonset'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+data:
+  data: |-
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: vsphere-cpi
+      labels:
+        app: vsphere-cpi
+        vsphere-cpi-infra: daemonset
+        component: cloud-controller-manager
+        tier: control-plane
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          app: vsphere-cpi
+      updateStrategy:
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            app: vsphere-cpi
+            component: cloud-controller-manager
+            tier: control-plane
+            release: release-name
+            vsphere-cpi-infra: daemonset
+        spec:
+          tolerations:
+            - effect: NoSchedule
+              key: node.cluster.x-k8s.io/uninitialized
+            - effect: NoSchedule
+              key: node.cloudprovider.kubernetes.io/uninitialized
+              value: "true"
+            - effect: NoSchedule
+              key: node-role.kubernetes.io/control-plane
+              operator: Exists
+            - effect: NoSchedule
+              key: node.kubernetes.io/not-ready
+              operator: Exists
+            - effect: NoExecute
+              key: CriticalAddonsOnly
+              operator: Exists
+          securityContext:
+            fsGroup: 1001
+            runAsUser: 1001
+          serviceAccountName: cloud-controller-manager
+          hostNetwork: true
+          dnsPolicy: ClusterFirst
+          priorityClassName: system-node-critical
+          containers:
+          - name: vsphere-cpi
+            image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${CPI_IMAGE_VERSION}
+            imagePullPolicy: IfNotPresent
+            args:
+              - --cloud-provider=vsphere
+              - --v=2
+              - --cloud-config=/etc/cloud/vsphere.conf
+            volumeMounts:
+              - mountPath: /etc/cloud
+                name: vsphere-config-volume
+                readOnly: true
+          volumes:
+            - name: vsphere-config-volume
+              configMap:
+                name: vsphere-cloud-config
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-vsphere-cloud-config'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+data:
+  data: |-
+    apiVersion: v1
+    data:
+      vsphere.conf: |
+        global:
+          port: 443
+          secretName: cloud-provider-vsphere-credentials
+          secretNamespace: kube-system
+          thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+        vcenter:
+          ${VSPHERE_SERVER}:
+            datacenters:
+            - '${VSPHERE_DATACENTER}'
+            server: '${VSPHERE_SERVER}'
+    kind: ConfigMap
+    metadata:
+      name: vsphere-cloud-config
+      namespace: kube-system
