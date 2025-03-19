@@ -169,7 +169,13 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 					tcp.Spec.NetworkProfile.CertSANs = []string{}
 				}
 
-				tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, kcp.Spec.Network.Ingress.Hostname)
+				if host, _, err := net.SplitHostPort(kcp.Spec.Network.Ingress.Hostname); err == nil {
+					// no error means <FQDN>:<PORT>, we need the host variable
+					tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, host)
+				} else {
+					// No port specification, adding bare entry
+					tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, kcp.Spec.Network.Ingress.Hostname)
+				}
 			} else {
 				tcp.Spec.ControlPlane.Ingress = nil
 			}
