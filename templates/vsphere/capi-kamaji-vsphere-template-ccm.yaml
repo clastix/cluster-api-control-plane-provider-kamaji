@@ -1,0 +1,276 @@
+kind: Cluster
+apiVersion: cluster.x-k8s.io/v1beta1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KamajiControlPlane
+    name: '${CLUSTER_NAME}'
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: VSphereCluster
+    name: '${CLUSTER_NAME}'
+---
+kind: VSphereCluster
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  identityRef:
+    kind: Secret
+    name: '${CLUSTER_NAME}-vsphere-secret'
+  server: '${VSPHERE_SERVER}'
+  thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-vsphere-secret'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+stringData:
+  password: '${VSPHERE_PASSWORD}'
+  username: '${VSPHERE_USERNAME}'
+---
+kind: KamajiControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+    cni: calico
+spec:
+  apiServer:
+    extraArgs:
+      - --cloud-provider=external
+  controllerManager:
+    extraArgs:
+      - --cloud-provider=external
+  dataStoreName: default
+  addons:
+    coreDNS: {}
+    kubeProxy: {}
+    konnectivity: {}
+  kubelet:
+    cgroupfs: systemd
+    preferredAddressTypes:
+      - InternalIP
+      - ExternalIP
+      - Hostname
+  network:
+    serviceType: LoadBalancer
+  version: ${KUBERNETES_VERSION}
+---
+kind: KubeadmConfigTemplate
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            node-ip: '{{ ds.meta_data.local_ipv4 }}'
+            cloud-provider: external
+          name: '{{ local_hostname }}'
+      preKubeadmCommands:
+      - hostnamectl set-hostname "{{ ds.meta_data.hostname }}"
+      - echo "::1         ipv6-localhost ipv6-loopback localhost6 localhost6.localdomain6" >/etc/hosts
+      - echo "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4" >>/etc/hosts
+      files:
+      - path: "/etc/cloud/cloud.cfg.d/99-custom.cfg"
+        content: "${CLOUD_INIT_CONFIG:-}"
+        owner: "root:root"
+        permissions: "0644"
+      users:
+      - name: '${SSH_USER}'
+        sshAuthorizedKeys:
+        - '${SSH_AUTHORIZED_KEY}'
+        sudo: ALL=(ALL) NOPASSWD:ALL
+---
+kind: VSphereMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+spec:
+  template:
+    spec:
+      cloneMode: linkedClone
+      datacenter: '${VSPHERE_DATACENTER}'
+      datastore: '${VSPHERE_DATASTORE}'
+      folder: '${VSPHERE_FOLDER}'
+      diskGiB: ${NODE_DISK_SIZE}
+      memoryMiB: ${NODE_MEMORY_SIZE}
+      numCPUs: ${NODE_CPU_COUNT}
+      os: Linux
+      network:
+        devices:
+        - dhcp4: false
+          nameservers:
+          - '${NAMESERVER}'
+          addressesFromPools:
+          - apiGroup: ipam.cluster.x-k8s.io
+            kind: InClusterIPPool
+            name: '${CLUSTER_NAME}-ipam-ip-pool'
+          networkName: '${VSPHERE_NETWORK}'
+      powerOffMode: trySoft
+      resourcePool: '${VSPHERE_RESOURCE_POOL}'
+      server: '${VSPHERE_SERVER}'
+      storagePolicyName: '${VSPHERE_STORAGE_POLICY}'
+      template: '${MACHINE_TEMPLATE}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+---
+kind: InClusterIPPool
+apiVersion: ipam.cluster.x-k8s.io/v1alpha2
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: '${CLUSTER_NAME}-ipam-ip-pool'
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  addresses:
+  - '${NODE_IPAM_POOL_RANGE}'
+  prefix: ${NODE_IPAM_POOL_PREFIX} # netmask
+  gateway: '${NODE_IPAM_POOL_GATEWAY}'
+---
+kind: MachineDeployment
+apiVersion: cluster.x-k8s.io/v1beta1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-md-0
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  clusterName: '${CLUSTER_NAME}'
+  replicas: ${MACHINE_DEPLOY_REPLICAS}
+  selector:
+    matchLabels: {}
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: '${CLUSTER_NAME}'
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: VSphereMachineTemplate
+        name: '${CLUSTER_NAME}'
+      version: '${KUBERNETES_VERSION}'
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-cloud-controller-manager'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: ${CLUSTER_NAME}-${CLUSTER_NAMESPACE}:apiserver-authentication-reader
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+- apiGroup: ""
+  kind: ServiceAccount
+  name: ${CLUSTER_NAME}-cloud-controller-manager
+  namespace: ${CLUSTER_NAMESPACE}
+- apiGroup: ""
+  kind: User
+  name: cloud-controller-manager
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}-vsphere-cloud-controller-manager'
+  namespace: ${CLUSTER_NAMESPACE}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      k8s-app: '${CLUSTER_NAME}-vsphere-cloud-controller-manager'
+  template:
+    metadata:
+      labels:
+        k8s-app: '${CLUSTER_NAME}-vsphere-cloud-controller-manager'
+    spec:
+      containers:
+        - name: vsphere-cloud-controller-manager
+          image: registry.k8s.io/cloud-pv-vsphere/cloud-provider-vsphere:${CPI_IMAGE_VERSION}
+          args:
+            - --v=2
+            - --cloud-config=/etc/cloud/vsphere.conf
+            - --cloud-provider=vsphere
+            - --authentication-kubeconfig=/etc/kubernetes/admin.svc
+            - --kubeconfig=/etc/kubernetes/admin.svc
+            - --leader-elect=true
+          volumeMounts:
+            - mountPath: /etc/cloud
+              name: vsphere-config-volume
+              readOnly: true
+            - mountPath: /etc/kubernetes/admin.svc
+              name: '${CLUSTER_NAME}-admin-kubeconfig'
+              subPath: admin.svc
+              readOnly: true
+          resources: {}
+      hostNetwork: false
+      securityContext:
+        runAsUser: 1001
+      serviceAccountName: ${CLUSTER_NAME}-cloud-controller-manager
+      volumes:
+        - name: vsphere-config-volume
+          secret:
+            secretName: '${CLUSTER_NAME}-vsphere-config-secret'
+        - name: '${CLUSTER_NAME}-admin-kubeconfig'
+          secret:
+            secretName: '${CLUSTER_NAME}-admin-kubeconfig'
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: '${CLUSTER_NAME}-vsphere-config-secret'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+stringData:
+  vsphere.conf: |
+    global:
+      port: 443
+      password: '${VSPHERE_PASSWORD}'
+      user: '${VSPHERE_USERNAME}'
+      thumbprint: '${VSPHERE_TLS_THUMBPRINT}'
+    vcenter:
+      ${VSPHERE_SERVER}:
+        datacenters:
+        - '${VSPHERE_DATACENTER}'
+        server: '${VSPHERE_SERVER}'
