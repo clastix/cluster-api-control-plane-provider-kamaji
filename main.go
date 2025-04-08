@@ -121,12 +121,12 @@ func main() {
 			BindAddress: metricsAddr,
 		},
 		WebhookServer: webhook.NewServer(webhook.Options{
-			Port: 9443, //nolint:gomnd
+			Port: 9443, //nolint:mnd
 		}),
 		NewClient: func(config *rest.Config, options client.Options) (client.Client, error) {
 			options.Cache.Unstructured = true
 
-			return client.New(config, options) //nolint:wrapcheck
+			return client.New(config, options)
 		},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,

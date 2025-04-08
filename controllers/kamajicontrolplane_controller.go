@@ -106,7 +106,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Handling finalizer for external deployment:
 	// in case of ExternalClusterReference the remote TCP must be deleted.
 	if kcp.DeletionTimestamp != nil {
-		return r.handleDeletion(ctx, kcp)
+		return ctrl.Result{}, r.handleDeletion(ctx, kcp)
 	}
 
 	// Extracting conditions, used to update the KamajiControlPlane ones upon the end of the reconciliation.
@@ -167,7 +167,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Managed Kubernetes Service, although running as a regular pod.
 	TrackConditionType(&conditions, kcpv1alpha1.TenantControlPlaneAddressReadyConditionType, kcp.Generation, func() error {
 		if len(tcp.Status.ControlPlaneEndpoint) == 0 {
-			err = fmt.Errorf("Control Plane Endpoint is not yet available since unprocessed by Kamaji") //nolint:goerr113,stylecheck
+			err = goerrors.New("Control Plane Endpoint is not yet available since unprocessed by Kamaji")
 		}
 
 		return err
@@ -176,9 +176,9 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// there's no need to start the requeue with error logging, the Infrastructure Provider will react once the address
 	// is available and assigned to the managed TenantControlPlane resource.
 	if err != nil {
-		log.Info(fmt.Sprintf("%s, enqueuing back", err.Error()))
+		log.Info(err.Error() + ", enqueuing back")
 
-		return ctrl.Result{}, nil //nolint:nilerr
+		return ctrl.Result{}, nil
 	}
 	// Starting from CAPI v1.8, the ControlPlane provider can set the Control Plane endpoint:
 	// this will make useless the patchCluster function in the future.
@@ -359,7 +359,7 @@ func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx contex
 
 		modifierFn()
 
-		return r.client.Status().Update(ctx, kcp) //nolint:wrapcheck
+		return r.client.Status().Update(ctx, kcp)
 	})
 	if err != nil {
 		return goerrors.Wrap(err, "cannot update KamajiControlPlane resource")
