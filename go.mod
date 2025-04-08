@@ -1,8 +1,6 @@
 module github.com/clastix/cluster-api-control-plane-provider-kamaji
 
-go 1.22.0
-
-toolchain go1.22.1
+go 1.24.1
 
 require (
 	github.com/clastix/kamaji v1.0.1-0.20241021192153-9ca69e91f9c9

@@ -27,6 +27,6 @@ func (k KamajiControlPlaneUID) ExtractValue() client.IndexerFunc {
 	return func(object client.Object) []string {
 		kcp := object.(*kcpv1alpha1.KamajiControlPlane) //nolint:forcetypeassert
 
-		return []string{string(kcp.ObjectMeta.UID)}
+		return []string{string(kcp.UID)}
 	}
 }

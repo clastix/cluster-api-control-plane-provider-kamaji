@@ -62,10 +62,10 @@ func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Con
 
 		controlPlane.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
 			Host: endpoint,
-			Port: int32(port),
+			Port: int32(port), //nolint:gosec
 		}
 
-		return r.client.Update(ctx, controlPlane) //nolint:wrapcheck
+		return r.client.Update(ctx, controlPlane)
 	}); err != nil {
 		return errors.Wrap(err, "cannot update KamajiControlPlane with ControlPlaneEndpoint")
 	}
@@ -204,11 +204,11 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 	}
 
 	if cpHost != endpoint {
-		return fmt.Errorf("the %s cluster has been provisioned with a mismatching host", gkc.GetKind()) //nolint:goerr113
+		return fmt.Errorf("the %s cluster has been provisioned with a mismatching host", gkc.GetKind())
 	}
 
 	if cpPort != port {
-		return fmt.Errorf("the %s cluster has been provisioned with a mismatching port", gkc.GetKind()) //nolint:goerr113
+		return fmt.Errorf("the %s cluster has been provisioned with a mismatching port", gkc.GetKind())
 	}
 
 	return nil

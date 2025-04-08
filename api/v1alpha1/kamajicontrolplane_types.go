@@ -129,7 +129,7 @@ type KamajiControlPlaneFields struct {
 	ContainerRegistry string `json:"registry,omitempty"`
 
 	ControllerManager ControlPlaneComponent `json:"controllerManager,omitempty"`
-	ApiServer         ControlPlaneComponent `json:"apiServer,omitempty"` //nolint:revive,stylecheck
+	ApiServer         ControlPlaneComponent `json:"apiServer,omitempty"` //nolint:revive
 	Scheduler         ControlPlaneComponent `json:"scheduler,omitempty"`
 	Kine              KineComponent         `json:"kine,omitempty"`
 	// Configure the Kubelet options, such as the preferred address types, or the expected cgroupfs.

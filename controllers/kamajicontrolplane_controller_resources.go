@@ -67,7 +67,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
 func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, reader client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiCA := &corev1.Secret{}
-	capiCA.Name = fmt.Sprintf("%s-ca", cluster.Name)
+	capiCA.Name = cluster.Name + "-ca"
 	capiCA.Namespace = cluster.Namespace
 
 	kamajiCA := &corev1.Secret{}
@@ -114,7 +114,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 			}
 			capiCA.Type = capiv1beta1.ClusterSecretType
 
-			return controllerutil.SetControllerReference(&kcp, capiCA, r.client.Scheme()) //nolint:wrapcheck
+			return controllerutil.SetControllerReference(&kcp, capiCA, r.client.Scheme())
 		})
 
 		return scopeErr //nolint:wrapcheck
@@ -132,7 +132,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
 func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, reader client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiAdminKubeconfig := &corev1.Secret{}
-	capiAdminKubeconfig.Name = fmt.Sprintf("%s-kubeconfig", cluster.Name)
+	capiAdminKubeconfig.Name = cluster.Name + "-kubeconfig"
 	capiAdminKubeconfig.Namespace = cluster.Namespace
 
 	kamajiAdminKubeconfig := &corev1.Secret{}
@@ -173,7 +173,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 			}
 			capiAdminKubeconfig.Type = capiv1beta1.ClusterSecretType
 
-			return controllerutil.SetControllerReference(&kcp, capiAdminKubeconfig, r.client.Scheme()) //nolint:wrapcheck
+			return controllerutil.SetControllerReference(&kcp, capiAdminKubeconfig, r.client.Scheme())
 		})
 
 		return scopeErr //nolint:wrapcheck

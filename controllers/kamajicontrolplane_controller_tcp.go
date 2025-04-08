@@ -82,7 +82,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			// Version
 			// Tolerate version strings without a "v" prefix: prepend it if it's not there
 			if !strings.HasPrefix(kcp.Spec.Version, "v") {
-				tcp.Spec.Kubernetes.Version = fmt.Sprintf("v%s", kcp.Spec.Version)
+				tcp.Spec.Kubernetes.Version = "v" + kcp.Spec.Version
 			} else {
 				tcp.Spec.Kubernetes.Version = kcp.Spec.Version
 			}
@@ -194,7 +194,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.AdditionalVolumes = kcp.Spec.Deployment.ExtraVolumes
 
 			if !isDelegatedExternally {
-				return controllerutil.SetControllerReference(&kcp, tcp, k8sClient.Scheme()) //nolint:wrapcheck
+				return controllerutil.SetControllerReference(&kcp, tcp, k8sClient.Scheme())
 			}
 
 			return nil

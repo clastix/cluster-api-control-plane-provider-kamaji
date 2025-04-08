@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
-	ctrl "sigs.k8s.io/controller-runtime"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
@@ -30,7 +29,7 @@ func (r *KamajiControlPlaneReconciler) handleFinalizer(ctx context.Context, kcp 
 
 			kcp.SetFinalizers(finalizers.UnsortedList())
 
-			return r.client.Update(ctx, kcp) //nolint:wrapcheck
+			return r.client.Update(ctx, kcp)
 		})
 		if err != nil {
 			return err //nolint:wrapcheck
@@ -40,20 +39,20 @@ func (r *KamajiControlPlaneReconciler) handleFinalizer(ctx context.Context, kcp 
 	return nil
 }
 
-func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v1alpha1.KamajiControlPlane) (ctrl.Result, error) {
+func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v1alpha1.KamajiControlPlane) error {
 	finalizers, log := sets.New[string](kcp.Finalizers...), ctrllog.FromContext(ctx)
 
 	if !finalizers.Has(ExternalClusterReferenceFinalizer) || kcp.Spec.Deployment.ExternalClusterReference == nil {
 		log.Info("waiting for KamajiControlPlane finalizers")
 
-		return ctrl.Result{}, nil
+		return nil
 	}
 
 	remoteClient, cErr := r.extractRemoteClient(ctx, kcp)
 	if cErr != nil {
 		log.Error(cErr, "cannot generate remote client for deletion")
 
-		return ctrl.Result{}, cErr
+		return cErr
 	}
 
 	var tcp kamajiv1alpha1.TenantControlPlane
@@ -63,12 +62,12 @@ func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v
 		if errors.IsNotFound(tcpErr) {
 			log.Info("remote TenantControlPlane is already deleted")
 
-			return ctrl.Result{}, nil
+			return nil
 		}
 
 		log.Error(tcpErr, "cannot delete remote TenantControlPlane")
 
-		return ctrl.Result{}, tcpErr //nolint:wrapcheck
+		return tcpErr //nolint:wrapcheck
 	}
 
 	log.Info("remote TenantControlPlane has been deleted")
@@ -83,21 +82,21 @@ func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v
 
 		kcp.Finalizers = finalizers.UnsortedList()
 
-		return r.client.Update(ctx, &kcp) //nolint:wrapcheck
+		return r.client.Update(ctx, &kcp)
 	})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("object may have been deleted")
 
-			return ctrl.Result{}, nil
+			return nil
 		}
 
 		log.Error(err, "unable to remove finalizer")
 
-		return ctrl.Result{}, err //nolint:wrapcheck
+		return err //nolint:wrapcheck
 	}
 
 	log.Info("finalizer has been removed")
 
-	return ctrl.Result{}, nil
+	return nil
 }
