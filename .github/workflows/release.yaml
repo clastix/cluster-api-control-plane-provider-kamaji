@@ -5,17 +5,22 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: tag release
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
       - name: checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           token: ${{ secrets.BOT_GITHUB_TOKEN }}

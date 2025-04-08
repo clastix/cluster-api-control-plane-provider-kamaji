@@ -6,22 +6,27 @@ on:
   pull_request:
     branches: [ "*" ]
 
+permissions:
+  contents: read
+
 jobs:
   commit_lint:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: wagoid/commitlint-github-action@v2
-        with:
-          firstParent: true
+      - uses: actions/checkout@v4
+      - uses: wagoid/commitlint-github-action@v6
   golangci:
     name: lint
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       - name: Run golangci-lint
@@ -33,10 +38,8 @@ jobs:
     name: diff
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       - run: make release
