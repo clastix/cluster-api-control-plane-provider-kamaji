@@ -378,7 +378,7 @@ func (r *KamajiControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr
 		Owns(&corev1.Secret{}).
 		WatchesRawSource(source.Channel(channel, &handler.EnqueueRequestForObject{})).
 		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
-		WithEventFilter(predicates.ResourceNotPaused(ctrl.LoggerFrom(ctx)))
+		WithEventFilter(predicates.ResourceNotPaused(mgr.GetScheme(), ctrl.LoggerFrom(ctx)))
 
 	cs, csErr := kubernetes.NewForConfig(mgr.GetConfig())
 	if csErr != nil {
