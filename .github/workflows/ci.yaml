@@ -30,10 +30,13 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3.0.0
-        with:
-          version: v1.54.2
-          args: --timeout 5m --config .golangci.yml
+        run: make lint
+      # TODO(prometherion): enable back once golangci-lint is built from v1.24 rather than v1.23
+      # - name: Run golangci-lint
+      #   uses: golangci/golangci-lint-action@v3.0.0
+      #   with:
+      #     version: v1.54.2
+      #     args: --timeout 5m --config .golangci.yml
   diff:
     name: diff
     runs-on: ubuntu-22.04
