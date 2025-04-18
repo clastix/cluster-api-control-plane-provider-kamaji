@@ -37,7 +37,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 | [Tinkerbell](https://github.com/tinkerbell/cluster-api-provider-tinkerbell) ([technical considerations](docs/providers-tinkerbell.md))        | += v0.5.2         |
 | [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))            | += 1.7.0          |
 | [IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud) ([technical considerations](docs/providers-ionoscloud.md))      | += v0.3.0         |
-| [Proxmox by IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-proxmox) ([technical considerations](docs/providers-proxmox.md)) | unreleased        |
+| [Proxmox by IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-proxmox) ([technical considerations](docs/providers-proxmox.md)) | += v0.6.0         |
 | [Azure](https://github.com/kubernetes-sigs/cluster-api-provider-azure) ([technical considerations](docs/providers-azure.md))                  | += v1.18.0        |
 
 > Are you looking for further integrations?
