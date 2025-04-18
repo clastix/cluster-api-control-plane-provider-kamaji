@@ -133,7 +133,5 @@ spec:
 
 ## Technical considerations
 
-The `ProxmoxCluster` `spec.externalManagedControlPlane` value must be toggled to true.
-
-> Currently, the said change has not yet been released by the CAPMOX project:
-> to test this feature, you need to build and install from source code.
+The `ProxmoxCluster` `spec.externalManagedControlPlane` value must be toggled to true:
+such a field is available starting from the v0.6.0 release.
