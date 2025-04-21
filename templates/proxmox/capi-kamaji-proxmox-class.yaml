@@ -1,0 +1,143 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: '${CLUSTER_CLASS_NAME}'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  controlPlane:
+    namingStrategy:
+      template: '{{ .cluster.name }}'
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+      kind: KamajiControlPlaneTemplate
+      name: '${CLUSTER_CLASS_NAME}-kamaji-control-plane-template'
+      namespace: '${CLUSTER_CLASS_NAMESPACE}'
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: ProxmoxClusterTemplate
+      name: '${CLUSTER_CLASS_NAME}-proxmox-cluster-template'
+      namespace: '${CLUSTER_CLASS_NAMESPACE}'
+  workers:
+    machineDeployments:
+    - class: '${CLUSTER_CLASS_NAME}'
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: '${CLUSTER_CLASS_NAME}-kubeadm-config-template'
+            namespace: '${CLUSTER_CLASS_NAMESPACE}'
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+            kind: ProxmoxMachineTemplate
+            name: '${CLUSTER_CLASS_NAME}-proxmox-machine-template'
+            namespace: '${CLUSTER_CLASS_NAMESPACE}'
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: KamajiControlPlaneTemplate
+metadata:
+  name: '${CLUSTER_CLASS_NAME}-kamaji-control-plane-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    metadata:
+      labels:
+        cni: calico
+    spec:
+      addons:
+        coreDNS: {}
+        konnectivity: {}
+        kubeProxy: {}
+      dataStoreName: default
+      kubelet:
+        cgroupfs: systemd
+        preferredAddressTypes:
+        - InternalIP
+        - ExternalIP
+        - Hostname
+      network:
+        serviceType: LoadBalancer
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: ProxmoxClusterTemplate
+metadata:
+  name: '${CLUSTER_CLASS_NAME}-proxmox-cluster-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    spec:
+      allowedNodes: ${ALLOWED_NODES}
+      credentialsRef:
+        name: '${CLUSTER_NAME}-proxmox-secret'
+        namespace: '${CLUSTER_CLASS_NAMESPACE}'
+      dnsServers: ${DNS_SERVERS}
+      externalManagedControlPlane: true
+      ipv4Config:
+        addresses: ${IP_RANGE}
+        gateway: '${GATEWAY}'
+        prefix: ${IP_PREFIX}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: ProxmoxMachineTemplate
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: sample
+  name: '${CLUSTER_CLASS_NAME}-proxmox-machine-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    spec:
+      allowedNodes: ${ALLOWED_NODES}
+      disks:
+        bootVolume:
+          disk: '${BOOT_VOLUME_DEVICE}'
+          sizeGb: ${BOOT_VOLUME_SIZE}
+      storage: '${STORAGE_NODE}'
+      format: '${FILE_STORAGE_FORMAT}'
+      full: true
+      network:
+        default:
+          ipv4PoolRef:
+            apiGroup: ipam.cluster.x-k8s.io
+            kind: InClusterIPPool
+            name: '${CLUSTER_NAME}-ipam-ip-pool'
+          dnsServers: ${DNS_SERVERS}
+          bridge: '${NETWORK_BRIDGE}'
+          model: '${NETWORK_MODEL}'
+      memoryMiB: ${MEMORY_MIB}
+      numCores: ${NUM_CORES}
+      numSockets: ${NUM_SOCKETS}
+      sourceNode: '${SOURCE_NODE}'
+      templateID: ${TEMPLATE_ID}
+      pool: '${CLUSTER_NAME}-capi-pool'
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: sample
+  name: '${CLUSTER_CLASS_NAME}-kubeadm-config-template'
+  namespace: '${CLUSTER_CLASS_NAMESPACE}'
+spec:
+  template:
+    spec:
+      # files:
+      # - content: '#cloud-config'
+      #   owner: root:root
+      #   path: /etc/cloud/cloud.cfg.d/99-custom.cfg
+      #   permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            provider-id: proxmox://'{{ ds.meta_data.instance_id }}'
+            # node-labels: '${NODE_LABELS}'
+            # register-with-taints: '${NODE_TAINTS}'
+          name: '{{ local_hostname }}'
+      users:
+      - name: '${SSH_USER}'
+        sshAuthorizedKeys:
+        - '${SSH_AUTHORIZED_KEY}'
+        sudo: ALL=(ALL) NOPASSWD:ALL

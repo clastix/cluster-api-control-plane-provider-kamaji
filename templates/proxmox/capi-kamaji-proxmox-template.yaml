@@ -1,0 +1,178 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+spec:
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    kind: KamajiControlPlane
+    name: '${CLUSTER_NAME}'
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: ProxmoxCluster
+    name: '${CLUSTER_NAME}'
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: KamajiControlPlane
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+    cni: calico
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  addons:
+    coreDNS: {}
+    konnectivity: {}
+    kubeProxy: {}
+  dataStoreName: ${CLUSTER_DATASTORE}
+  kubelet:
+    cgroupfs: systemd
+    preferredAddressTypes:
+    - InternalIP
+    - ExternalIP
+    - Hostname
+  network:
+    serviceType: LoadBalancer
+  version: ${KUBERNETES_VERSION}
+  replicas: ${CONTROL_PLANE_REPLICAS}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: ProxmoxCluster
+metadata:
+  name: '${CLUSTER_NAME}'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+spec:
+  allowedNodes: ${ALLOWED_NODES}
+  dnsServers: ${DNS_SERVERS}
+  externalManagedControlPlane: true
+  ipv4Config:
+    addresses: ${IP_RANGE}
+    gateway: '${GATEWAY}'
+    prefix: ${IP_PREFIX}
+  credentialsRef:
+    name: '${CLUSTER_NAME}-proxmox-secret'
+    namespace: '${CLUSTER_NAMESPACE}'
+---
+apiVersion: ipam.cluster.x-k8s.io/v1alpha2
+kind: InClusterIPPool
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}-ipam-ip-pool'
+  namespace: '${CLUSTER_NAMESPACE}'
+spec:
+  addresses: ${IP_RANGE}
+  gateway: '${GATEWAY}'
+  prefix: ${IP_PREFIX}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  name: '${CLUSTER_NAME}-proxmox-secret'
+  namespace: '${CLUSTER_NAMESPACE}'
+stringData:
+  secret: '${PROXMOX_SECRET}'
+  token: '${PROXMOX_TOKEN}'
+  url: '${PROXMOX_URL}'
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: '${CLUSTER_NAME}-worker'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+spec:
+  template:
+    spec:
+      # files:
+      # - content: "${CLOUD_INIT_CONFIG:-}"
+      #   owner: root:root
+      #   path: /etc/cloud/cloud.cfg.d/99-custom.cfg
+      #   permissions: "0644"
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          name: '{{ local_hostname }}'
+          kubeletExtraArgs:
+            provider-id: proxmox://'{{ ds.meta_data.instance_id }}'
+            # node-labels: '${NODE_LABELS}'
+            # register-with-taints: '${NODE_TAINTS}'
+      users:
+      - name: '${SSH_USER}'
+        sshAuthorizedKeys:
+        - '${SSH_AUTHORIZED_KEY}'
+        sudo: ALL=(ALL) NOPASSWD:ALL
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: '${CLUSTER_NAME}-workers'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+spec:
+  clusterName: '${CLUSTER_NAME}'
+  replicas: ${NODE_REPLICAS}
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+        node-role.kubernetes.io/node: ""
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: '${CLUSTER_NAME}-worker'
+      clusterName: '${CLUSTER_NAME}'
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: ProxmoxMachineTemplate
+        name: '${CLUSTER_NAME}-worker'
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: ProxmoxMachineTemplate
+metadata:
+  name: '${CLUSTER_NAME}-worker'
+  namespace: '${CLUSTER_NAMESPACE}'
+  labels:
+    cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
+spec:
+  template:
+    spec:
+      allowedNodes: ${ALLOWED_NODES}
+      disks:
+        bootVolume:
+          disk: '${BOOT_VOLUME_DEVICE}'
+          sizeGb: ${BOOT_VOLUME_SIZE}
+      storage: '${STORAGE_NODE}'
+      format: '${FILE_STORAGE_FORMAT}'
+      full: true
+      network:
+        default:
+          ipv4PoolRef:
+            apiGroup: ipam.cluster.x-k8s.io
+            kind: InClusterIPPool
+            name: '${CLUSTER_NAME}-ipam-ip-pool'
+          dnsServers: ${DNS_SERVERS}
+          bridge: '${NETWORK_BRIDGE}'
+          model: '${NETWORK_MODEL}'
+      memoryMiB: ${MEMORY_MIB}
+      numCores: ${NUM_CORES}
+      numSockets: ${NUM_SOCKETS}
+      sourceNode: '${SOURCE_NODE}'
+      templateID: ${TEMPLATE_ID}
+      pool: '${CLUSTER_NAME}-capi-pool'
