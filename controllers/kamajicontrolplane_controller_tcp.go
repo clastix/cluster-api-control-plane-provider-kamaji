@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -181,7 +182,9 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			}
 			// LoadBalancer
 			if kcp.Spec.Network.LoadBalancerConfig != nil {
-				tcp.Spec.NetworkProfile.LoadBalancerClass = kcp.Spec.Network.LoadBalancerConfig.LoadBalancerClass
+				if lbClass := kcp.Spec.Network.LoadBalancerConfig.LoadBalancerClass; lbClass != nil {
+					tcp.Spec.NetworkProfile.LoadBalancerClass = ptr.To(*lbClass)
+				}
 				tcp.Spec.NetworkProfile.LoadBalancerSourceRanges = kcp.Spec.Network.LoadBalancerConfig.LoadBalancerSourceRanges
 			}
 			// Deployment
