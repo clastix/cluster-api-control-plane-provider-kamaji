@@ -100,9 +100,6 @@ spec:
   controllerManager:
     extraArgs:
     - --cloud-provider=external
-  apiServer:
-    extraArgs:
-    - --cloud-provider=external
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
