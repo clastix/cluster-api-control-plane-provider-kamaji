@@ -51,9 +51,6 @@ spec:
         coreDNS: {}
         konnectivity: {}
         kubeProxy: {}
-      apiServer:
-        extraArgs:
-        - --cloud-provider=external
       controllerManager:
         extraArgs:
         - --cloud-provider=external
