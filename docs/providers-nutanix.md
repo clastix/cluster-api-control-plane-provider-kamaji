@@ -53,9 +53,6 @@ metadata:
   name: kamaji-nutanix-127
   namespace: default
 spec:
-  apiServer:
-    extraArgs:
-      - --cloud-provider=external
   controllerManager:
     extraArgs:
       - --cloud-provider=external

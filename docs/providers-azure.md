@@ -79,9 +79,6 @@ metadata:
   name: kamaji-quickstart-control-plane
   namespace: default
 spec:
-  apiServer:
-    extraArgs:
-      - --cloud-provider=external
   controllerManager:
     extraArgs:
       - --cloud-provider=external
