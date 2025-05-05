@@ -6812,19 +6812,20 @@ spec:
                             type: string
                         type: object
                         x-kubernetes-validations:
-                        - message: LoadBalancer source ranges are supported only with
+                        - message: LoadBalancerSourceRanges are supported only with
                             LoadBalancer service type
-                          rule: '!has(self.loadBalancerConfig.loadBalancerSourceRanges)
+                          rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges)
                             || (size(self.loadBalancerConfig.loadBalancerSourceRanges)
                             == 0 || self.serviceType == ''LoadBalancer'')'
                         - message: LoadBalancerClass is supported only with LoadBalancer
                             service type
-                          rule: '!has(self.loadBalancerConfig.loadBalancerClass) ||
-                            self.serviceType == ''LoadBalancer'''
+                          rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass)
+                            || self.serviceType == ''LoadBalancer'''
                         - message: LoadBalancerClass cannot be set or unset at runtime
                           rule: self.serviceType != 'LoadBalancer' || (oldSelf.serviceType
                             != 'LoadBalancer' && self.serviceType == 'LoadBalancer')
-                            || has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)
+                            || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig.loadBalancerClass)
+                            == has(oldSelf.loadBalancerConfig.loadBalancerClass)
                       registry:
                         default: registry.k8s.io
                         description: |-

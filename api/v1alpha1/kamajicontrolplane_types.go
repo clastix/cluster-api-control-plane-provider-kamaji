@@ -61,13 +61,13 @@ type LoadBalancerConfig struct {
 	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == 'LoadBalancer')", message="LoadBalancer source ranges are supported only with LoadBalancer service type"
-// +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == 'LoadBalancer'", message="LoadBalancerClass is supported only with LoadBalancer service type"
-// +kubebuilder:validation:XValidation:rule="self.serviceType != 'LoadBalancer' || (oldSelf.serviceType != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)",message="LoadBalancerClass cannot be set or unset at runtime"
+// +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == 'LoadBalancer')", message="LoadBalancerSourceRanges are supported only with LoadBalancer service type"
+// +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == 'LoadBalancer'", message="LoadBalancerClass is supported only with LoadBalancer service type"
+// +kubebuilder:validation:XValidation:rule="self.serviceType != 'LoadBalancer' || (oldSelf.serviceType != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)",message="LoadBalancerClass cannot be set or unset at runtime"
 
 type NetworkComponent struct {
 	// Optional configuration for the LoadBalancer service that exposes the Kamaji control plane.
-	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
+	LoadBalancerConfig LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
 	// When specified, the KamajiControlPlane will be reachable using an Ingress object
 	// deployed in the management cluster.
 	Ingress *IngressComponent `json:"ingress,omitempty"`

@@ -181,12 +181,11 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 				tcp.Spec.ControlPlane.Ingress = nil
 			}
 			// LoadBalancer
-			if kcp.Spec.Network.LoadBalancerConfig != nil {
-				if lbClass := kcp.Spec.Network.LoadBalancerConfig.LoadBalancerClass; lbClass != nil {
-					tcp.Spec.NetworkProfile.LoadBalancerClass = ptr.To(*lbClass)
-				}
-				tcp.Spec.NetworkProfile.LoadBalancerSourceRanges = kcp.Spec.Network.LoadBalancerConfig.LoadBalancerSourceRanges
+			if lbClass := kcp.Spec.Network.LoadBalancerConfig.LoadBalancerClass; lbClass != nil {
+				tcp.Spec.NetworkProfile.LoadBalancerClass = ptr.To(*lbClass)
 			}
+			tcp.Spec.NetworkProfile.LoadBalancerSourceRanges = kcp.Spec.Network.LoadBalancerConfig.LoadBalancerSourceRanges
+
 			// Deployment
 			tcp.Spec.ControlPlane.Deployment.NodeSelector = kcp.Spec.Deployment.NodeSelector
 			tcp.Spec.ControlPlane.Deployment.RuntimeClassName = kcp.Spec.Deployment.RuntimeClassName
