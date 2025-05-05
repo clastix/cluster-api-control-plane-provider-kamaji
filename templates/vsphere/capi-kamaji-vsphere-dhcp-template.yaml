@@ -49,9 +49,6 @@ metadata:
     cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
     cni: calico
 spec:
-  apiServer:
-    extraArgs:
-      - --cloud-provider=external
   controllerManager:
     extraArgs:
       - --cloud-provider=external
