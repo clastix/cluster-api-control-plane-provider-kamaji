@@ -44,7 +44,30 @@ type IngressComponent struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 }
 
+// LoadBalancerConfig is used when the KamajiControlPlane is exposed using a LoadBalancer service type.
+type LoadBalancerConfig struct {
+	// LoadBalancerSourceRanges restricts the IP ranges that can access
+	// the LoadBalancer type Service. This field defines a list of IP
+	// address ranges (in CIDR format) that are allowed to access the service.
+	// If left empty, the service will allow traffic from all IP ranges (0.0.0.0/0).
+	// This feature is useful for restricting access to API servers or services
+	// to specific networks for security purposes.
+	// Example: {"192.168.1.0/24", "10.0.0.0/8"}
+	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty"`
+	// Specify the LoadBalancer class in case of multiple load balancer implementations.
+	// Field supported only for Tenant Control Plane instances exposed using a LoadBalancer Service.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="LoadBalancerClass is immutable"
+	LoadBalancerClass *string `json:"loadBalancerClass,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == 'LoadBalancer')", message="LoadBalancerSourceRanges are supported only with LoadBalancer service type"
+// +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == 'LoadBalancer'", message="LoadBalancerClass is supported only with LoadBalancer service type"
+// +kubebuilder:validation:XValidation:rule="self.serviceType != 'LoadBalancer' || (oldSelf.serviceType != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig) && has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)",message="LoadBalancerClass cannot be set or unset at runtime"
+
 type NetworkComponent struct {
+	// Optional configuration for the LoadBalancer service that exposes the Kamaji control plane.
+	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
 	// When specified, the KamajiControlPlane will be reachable using an Ingress object
 	// deployed in the management cluster.
 	Ingress *IngressComponent `json:"ingress,omitempty"`

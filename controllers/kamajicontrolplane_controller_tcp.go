@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -25,7 +26,7 @@ var ErrUnsupportedCertificateSAN = errors.New("a certificate SAN must be made of
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
-//nolint:funlen,gocognit,cyclop
+//nolint:funlen,gocognit,cyclop,maintidx
 func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
@@ -179,6 +180,17 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			} else {
 				tcp.Spec.ControlPlane.Ingress = nil
 			}
+			// LoadBalancer
+			if kcp.Spec.Network.LoadBalancerConfig != nil {
+				if lbClass := kcp.Spec.Network.LoadBalancerConfig.LoadBalancerClass; lbClass != nil {
+					tcp.Spec.NetworkProfile.LoadBalancerClass = ptr.To(*lbClass)
+				}
+
+				if srcRange := kcp.Spec.Network.LoadBalancerConfig.LoadBalancerSourceRanges; srcRange != nil {
+					tcp.Spec.NetworkProfile.LoadBalancerSourceRanges = srcRange
+				}
+			}
+
 			// Deployment
 			tcp.Spec.ControlPlane.Deployment.NodeSelector = kcp.Spec.Deployment.NodeSelector
 			tcp.Spec.ControlPlane.Deployment.RuntimeClassName = kcp.Spec.Deployment.RuntimeClassName

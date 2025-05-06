@@ -6681,6 +6681,32 @@ spec:
                     required:
                     - hostname
                     type: object
+                  loadBalancerConfig:
+                    description: Optional configuration for the LoadBalancer service
+                      that exposes the Kamaji control plane.
+                    properties:
+                      loadBalancerClass:
+                        description: |-
+                          Specify the LoadBalancer class in case of multiple load balancer implementations.
+                          Field supported only for Tenant Control Plane instances exposed using a LoadBalancer Service.
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: LoadBalancerClass is immutable
+                          rule: self == oldSelf
+                      loadBalancerSourceRanges:
+                        description: |-
+                          LoadBalancerSourceRanges restricts the IP ranges that can access
+                          the LoadBalancer type Service. This field defines a list of IP
+                          address ranges (in CIDR format) that are allowed to access the service.
+                          If left empty, the service will allow traffic from all IP ranges (0.0.0.0/0).
+                          This feature is useful for restricting access to API servers or services
+                          to specific networks for security purposes.
+                          Example: {"192.168.1.0/24", "10.0.0.0/8"}
+                        items:
+                          type: string
+                        type: array
+                    type: object
                   serviceAddress:
                     description: |-
                       This field can be used in case of pre-assigned address, such as a VIP,
@@ -6704,6 +6730,21 @@ spec:
                     - LoadBalancer
                     type: string
                 type: object
+                x-kubernetes-validations:
+                - message: LoadBalancerSourceRanges are supported only with LoadBalancer
+                    service type
+                  rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges)
+                    || (size(self.loadBalancerConfig.loadBalancerSourceRanges) ==
+                    0 || self.serviceType == ''LoadBalancer'')'
+                - message: LoadBalancerClass is supported only with LoadBalancer service
+                    type
+                  rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass)
+                    || self.serviceType == ''LoadBalancer'''
+                - message: LoadBalancerClass cannot be set or unset at runtime
+                  rule: self.serviceType != 'LoadBalancer' || (oldSelf.serviceType
+                    != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || !has(self.loadBalancerConfig)
+                    || has(self.loadBalancerConfig) && has(self.loadBalancerConfig.loadBalancerClass)
+                    == has(oldSelf.loadBalancerConfig.loadBalancerClass)
               registry:
                 default: registry.k8s.io
                 description: |-
