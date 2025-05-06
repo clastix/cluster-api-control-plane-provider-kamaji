@@ -68,7 +68,7 @@ spec:
     serviceType: LoadBalancer
   deployment:
   replicas: 2
-  version: 1.23.10
+  version: 1.32.1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
@@ -101,7 +101,7 @@ spec:
               evictionStrategy: External
               volumes:
               - containerDisk:
-                  image: quay.io/capk/ubuntu-2004-container-disk:v1.23.10
+                  image: quay.io/capk/ubuntu-2404-container-disk:v1.32.1
                 name: containervolume
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -140,7 +140,7 @@ spec:
         kind: KubevirtMachineTemplate
         name: capi-quickstart-md-0
         namespace: default
-      version: v1.23.10
+      version: v1.32.1
 ```
 
 ## Technical considerations
