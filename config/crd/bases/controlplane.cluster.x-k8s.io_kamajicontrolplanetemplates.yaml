@@ -6824,8 +6824,8 @@ spec:
                         - message: LoadBalancerClass cannot be set or unset at runtime
                           rule: self.serviceType != 'LoadBalancer' || (oldSelf.serviceType
                             != 'LoadBalancer' && self.serviceType == 'LoadBalancer')
-                            || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig.loadBalancerClass)
-                            == has(oldSelf.loadBalancerConfig.loadBalancerClass)
+                            || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig)
+                            && has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)
                       registry:
                         default: registry.k8s.io
                         description: |-
