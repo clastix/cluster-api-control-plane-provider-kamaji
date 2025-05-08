@@ -58,6 +58,10 @@ type NetworkComponent struct {
 	// Configure additional Subject Address Names for the kube-apiserver certificate,
 	// useful if the TenantControlPlane is going to be exposed behind a FQDN with NAT.
 	CertSANs []string `json:"certSANs,omitempty"` //nolint:tagliatelle
+	// DNSServiceIPs contains the DNS Service IPs.
+	// If the CoreDNS addon is specified, its DNSServiceIPs will be used instead.
+	// When set to an empty slice, Kamaji will automatically inflect it from the Service CIDR.
+	DNSServiceIPs []string `json:"dnsServiceIPs,omitempty"`
 }
 
 // AddonsSpec defines the enabled addons and their features.
