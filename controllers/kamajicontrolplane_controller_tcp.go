@@ -87,6 +87,8 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			} else {
 				tcp.Spec.Kubernetes.Version = kcp.Spec.Version
 			}
+			// Set before CoreDNS addon to allow override.
+			tcp.Spec.NetworkProfile.DNSServiceIPs = kcp.Spec.Network.DNSServiceIPs
 			// Kamaji addons and CoreDNS overrides
 			tcp.Spec.Addons = kcp.Spec.Addons.AddonsSpec
 			if kcp.Spec.Addons.CoreDNS != nil {

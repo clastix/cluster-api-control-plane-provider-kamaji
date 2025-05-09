@@ -6731,6 +6731,14 @@ spec:
                             items:
                               type: string
                             type: array
+                          dnsServiceIPs:
+                            description: |-
+                              DNSServiceIPs contains the DNS Service IPs.
+                              If the CoreDNS addon is specified, its DNSServiceIPs will be used instead.
+                              When set to an empty slice, Kamaji will automatically inflect it from the Service CIDR.
+                            items:
+                              type: string
+                            type: array
                           ingress:
                             description: |-
                               When specified, the KamajiControlPlane will be reachable using an Ingress object
