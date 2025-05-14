@@ -59,4 +59,4 @@ jobs:
 
       - name: Build and push
         id: build-release
-        run: make docker-buildx
+        run: make VERSION=${{ github.ref_name }} docker-buildx
