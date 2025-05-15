@@ -57,6 +57,7 @@ rules:
   - hetznerclusters
   - ionoscloudclusters
   - kubevirtclusters
+  - metal3clusters
   - nutanixclusters
   - openstackclusters
   - packetclusters
@@ -76,12 +77,6 @@ rules:
   - packetclusters/status
   verbs:
   - patch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - metal3clusters
-  verbs:
-  - get
 - apiGroups:
   - kamaji.clastix.io
   resources:
