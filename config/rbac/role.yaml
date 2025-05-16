@@ -82,6 +82,8 @@ rules:
   - metal3clusters
   verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - kamaji.clastix.io
   resources:
