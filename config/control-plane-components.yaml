@@ -1527,7 +1527,7 @@ spec:
                       keepDefaultName:
                         description: Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
                           May lead to collisions in external cluster, use with care.
-                        type: bool
+                        type: boolean
                       deploymentNamespace:
                         description: The Namespace where the resulting TenantControlPlane must be deployed to.
                         type: string
@@ -8251,7 +8251,7 @@ spec:
                               keepDefaultName:
                                 description: Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
                                   May lead to collisions in external cluster, use with care.
-                                type: bool
+                                type: boolean
                               deploymentNamespace:
                                 description: The Namespace where the resulting TenantControlPlane must be deployed to.
                                 type: string
