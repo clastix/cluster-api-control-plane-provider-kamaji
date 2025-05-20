@@ -1525,7 +1525,8 @@ spec:
                       The ExternalClusterReference feature gate must be enabled with one of the available flags.
                     properties:
                       keepDefaultName:
-                        description: Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
+                        description: |-
+                          Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
                           May lead to collisions in external cluster, use with care.
                         type: boolean
                       deploymentNamespace:
@@ -8249,7 +8250,8 @@ spec:
                               The ExternalClusterReference feature gate must be enabled with one of the available flags.
                             properties:
                               keepDefaultName:
-                                description: Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
+                                description: |-
+                                  Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
                                   May lead to collisions in external cluster, use with care.
                                 type: boolean
                               deploymentNamespace:
