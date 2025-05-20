@@ -25,7 +25,8 @@ func ParseKamajiControlPlaneUIDFromTenantControlPlane(tcp kamajiv1alpha1.TenantC
 }
 
 func GenerateRemoteTenantControlPlaneNames(kcp v1alpha1.KamajiControlPlane) (name string, namespace string) { //nolint:nonamedreturns
-	if kcp.Spec.Deployment.ExternalClusterReference.KeepDefaultName == true {
+	if kcp.Spec.Deployment.ExternalClusterReference.KeepDefaultName {
+
 		return kcp.GetName(), kcp.Spec.Deployment.ExternalClusterReference.DeploymentNamespace
 	}
 	return RemoteTCPPrefix + string(kcp.UID), kcp.Spec.Deployment.ExternalClusterReference.DeploymentNamespace
