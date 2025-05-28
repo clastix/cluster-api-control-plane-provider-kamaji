@@ -184,6 +184,9 @@ type ExternalClusterReference struct {
 	KubeconfigSecretNamespace string `json:"kubeconfigSecretNamespace,omitempty"`
 	// The Namespace where the resulting TenantControlPlane must be deployed to.
 	DeploymentNamespace string `json:"deploymentNamespace"`
+	// Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
+	// May lead to collisions in external cluster, use with care.
+	KeepDefaultName bool `json:"keepDefaultName,omitempty"`
 }
 
 // KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
