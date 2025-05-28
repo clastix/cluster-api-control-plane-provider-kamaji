@@ -13,7 +13,7 @@ require (
 	k8s.io/client-go v0.33.0
 	k8s.io/component-base v0.33.0
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	sigs.k8s.io/cluster-api v1.10.1
+	sigs.k8s.io/cluster-api v1.10.2
 	sigs.k8s.io/controller-runtime v0.20.4
 )
 
@@ -52,6 +52,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
