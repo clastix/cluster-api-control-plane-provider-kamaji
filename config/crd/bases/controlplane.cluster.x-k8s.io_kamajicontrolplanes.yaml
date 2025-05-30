@@ -1572,15 +1572,14 @@ spec:
                       When this value is nil, the Cluster API management cluster will be used as a target.
                       The ExternalClusterReference feature gate must be enabled with one of the available flags.
                     properties:
+                      deploymentName:
+                        description: |-
+                          The Name of the resulting TenantControlPlane.
+                        type: string
                       deploymentNamespace:
                         description: The Namespace where the resulting TenantControlPlane
                           must be deployed to.
                         type: string
-                      keepDefaultName:
-                        description: |-
-                          Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
-                          May lead to collisions in external cluster, use with care.
-                        type: boolean
                       kubeconfigSecretKey:
                         description: The key used to extract the kubeconfig from the
                           specified Secret.
