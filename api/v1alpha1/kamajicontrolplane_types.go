@@ -185,6 +185,7 @@ type ExternalClusterReference struct {
 	// The Namespace where the resulting TenantControlPlane must be deployed to.
 	DeploymentNamespace string `json:"deploymentNamespace"`
 	// The Name of the resulting TenantControlPlane.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="DeploymentName is immutable"
 	DeploymentName string `json:"deploymentName,omitempty"`
 }
 

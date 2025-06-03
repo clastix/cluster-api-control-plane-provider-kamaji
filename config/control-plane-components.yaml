@@ -1528,6 +1528,9 @@ spec:
                         description: |-
                           The Name of the resulting TenantControlPlane.
                         type: string
+                        x-kubernetes-validations:
+                        - message: deploymentName is immutable
+                          rule: 'self == oldSelf'
                       deploymentNamespace:
                         description: The Namespace where the resulting TenantControlPlane must be deployed to.
                         type: string
@@ -8252,6 +8255,9 @@ spec:
                                 description: |-
                                   The Name of the resulting TenantControlPlane.
                                 type: string
+                                x-kubernetes-validations:
+                                - message: deploymentName is immutable
+                                  rule: 'self == oldSelf'
                               deploymentNamespace:
                                 description: The Namespace where the resulting TenantControlPlane must be deployed to.
                                 type: string
