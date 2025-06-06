@@ -1,18 +1,22 @@
+---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
-  name: quick-start
+  name: ${CLUSTER_CLASS_NAME}
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
 spec:
   controlPlane:
     ref:
       apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
       kind: KamajiControlPlaneTemplate
-      name: quick-start-control-plane
+      name: ${CLUSTER_CLASS_NAME}-control-plane
+      namespace: ${CLUSTER_CLASS_NAMESPACE}
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
       kind: KubevirtClusterTemplate
-      name: quick-start-cluster
+      name: ${CLUSTER_CLASS_NAME}-cluster
+      namespace: ${CLUSTER_CLASS_NAMESPACE}
   workers:
     machineDeployments:
     - class: default-worker
@@ -21,12 +25,14 @@ spec:
           ref:
             apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
             kind: KubeadmConfigTemplate
-            name: quick-start-default-worker-bootstraptemplate
+            name: ${CLUSTER_CLASS_NAME}-default-worker-bootstraptemplate
+            namespace: ${CLUSTER_CLASS_NAMESPACE}
         infrastructure:
           ref:
             apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
             kind: KubevirtMachineTemplate
-            name: quick-start-default-worker-machinetemplate
+            name: ${CLUSTER_CLASS_NAME}-default-worker-machinetemplate
+            namespace: ${CLUSTER_CLASS_NAMESPACE}
       machineHealthCheck:
         unhealthyConditions:
           - type: Ready
@@ -39,7 +45,8 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtClusterTemplate
 metadata:
-  name: quick-start-cluster
+  name: ${CLUSTER_CLASS_NAME}-cluster
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
 spec:
   template:
     metadata:
@@ -50,7 +57,8 @@ spec:
 kind: KamajiControlPlaneTemplate
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
 metadata:
-  name: quick-start-control-plane
+  name: ${CLUSTER_CLASS_NAME}-control-plane
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
 spec:
   template:
     spec:
@@ -69,7 +77,8 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
-  name: quick-start-default-worker-machinetemplate
+  name: ${CLUSTER_CLASS_NAME}-default-worker-machinetemplate
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
 spec:
   template:
     spec:
@@ -84,7 +93,7 @@ spec:
             spec:
               domain:
                 cpu:
-                  cores: 2
+                  cores: ${WORKER_CPU_CORES}
                 devices:
                   disks:
                   - disk:
@@ -92,7 +101,7 @@ spec:
                     name: containervolume
                   networkInterfaceMultiqueue: true
                 memory:
-                  guest: 4Gi
+                  guest: ${WORKER_MEMORY}
               evictionStrategy: External
               volumes:
               - containerDisk:
@@ -102,7 +111,8 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: quick-start-default-worker-bootstraptemplate
+  name: ${CLUSTER_CLASS_NAME}-default-worker-bootstraptemplate
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
 spec:
   template:
     spec:
@@ -112,18 +122,18 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: quick-start
+  name: ${CLUSTER_CLASS_NAME}
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 10.36.0.0/16
+      - ${POD_CIDR}
     services:
       cidrBlocks:
-      - 10.96.0.0/16
+      - ${SERVICE_CIDR}
   topology:
-    class: quick-start
-    classNamespace: default
+    class: ${CLUSTER_CLASS_NAME}
+    classNamespace: ${CLUSTER_CLASS_NAMESPACE}
     version: v1.32.1
     controlPlane:
       replicas: 3
