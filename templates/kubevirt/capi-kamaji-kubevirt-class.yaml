@@ -1,0 +1,144 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
+spec:
+  controlPlane:
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+      kind: KamajiControlPlaneTemplate
+      name: ${CLUSTER_CLASS_NAME}-control-plane
+      namespace: ${CLUSTER_CLASS_NAMESPACE}
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: KubevirtClusterTemplate
+      name: ${CLUSTER_CLASS_NAME}-cluster
+      namespace: ${CLUSTER_CLASS_NAMESPACE}
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${CLUSTER_CLASS_NAME}-default-worker-bootstraptemplate
+            namespace: ${CLUSTER_CLASS_NAMESPACE}
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+            kind: KubevirtMachineTemplate
+            name: ${CLUSTER_CLASS_NAME}-default-worker-machinetemplate
+            namespace: ${CLUSTER_CLASS_NAMESPACE}
+      machineHealthCheck:
+        unhealthyConditions:
+          - type: Ready
+            status: Unknown
+            timeout: 300s
+          - type: Ready
+            status: "False"
+            timeout: 300s
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtClusterTemplate
+metadata:
+  name: ${CLUSTER_CLASS_NAME}-cluster
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
+spec:
+  template:
+    metadata:
+      annotations:
+        cluster.x-k8s.io/managed-by: kamaji
+    spec: {}
+---
+kind: KamajiControlPlaneTemplate
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: ${CLUSTER_CLASS_NAME}-control-plane
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
+spec:
+  template:
+    spec:
+      dataStoreName: default
+      addons:
+        coreDNS: {}
+        kubeProxy: {}
+      kubelet:
+        cgroupfs: systemd
+        preferredAddressTypes:
+        - InternalIP
+        - ExternalIP
+      network:
+        serviceType: LoadBalancer
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: ${CLUSTER_CLASS_NAME}-default-worker-machinetemplate
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: ssh
+      virtualMachineTemplate:
+        metadata:
+          namespace: default
+        spec:
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: ${WORKER_CPU_CORES}
+                devices:
+                  disks:
+                  - disk:
+                      bus: virtio
+                    name: containervolume
+                  networkInterfaceMultiqueue: true
+                memory:
+                  guest: ${WORKER_MEMORY}
+              evictionStrategy: External
+              volumes:
+              - containerDisk:
+                  image: quay.io/capk/ubuntu-2404-container-disk:v1.32.1
+                name: containervolume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_CLASS_NAME}-default-worker-bootstraptemplate
+  namespace: ${CLUSTER_CLASS_NAMESPACE}
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: ${CLUSTER_CLASS_NAME}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - ${POD_CIDR}
+    services:
+      cidrBlocks:
+      - ${SERVICE_CIDR}
+  topology:
+    class: ${CLUSTER_CLASS_NAME}
+    classNamespace: ${CLUSTER_CLASS_NAMESPACE}
+    version: v1.32.1
+    controlPlane:
+      replicas: 3
+    workers:
+      machineDeployments:
+        - class: default-worker
+          name: md-0
+          replicas: 3
