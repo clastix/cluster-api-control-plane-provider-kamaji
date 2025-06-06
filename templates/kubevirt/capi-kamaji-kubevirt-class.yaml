@@ -1,0 +1,134 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: quick-start
+spec:
+  controlPlane:
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+      kind: KamajiControlPlaneTemplate
+      name: quick-start-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: KubevirtClusterTemplate
+      name: quick-start-cluster
+  workers:
+    machineDeployments:
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: quick-start-default-worker-bootstraptemplate
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+            kind: KubevirtMachineTemplate
+            name: quick-start-default-worker-machinetemplate
+      machineHealthCheck:
+        unhealthyConditions:
+          - type: Ready
+            status: Unknown
+            timeout: 300s
+          - type: Ready
+            status: "False"
+            timeout: 300s
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtClusterTemplate
+metadata:
+  name: quick-start-cluster
+spec:
+  template:
+    metadata:
+      annotations:
+        cluster.x-k8s.io/managed-by: kamaji
+    spec: {}
+---
+kind: KamajiControlPlaneTemplate
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: quick-start-control-plane
+spec:
+  template:
+    spec:
+      dataStoreName: default
+      addons:
+        coreDNS: {}
+        kubeProxy: {}
+      kubelet:
+        cgroupfs: systemd
+        preferredAddressTypes:
+        - InternalIP
+        - ExternalIP
+      network:
+        serviceType: LoadBalancer
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: quick-start-default-worker-machinetemplate
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: ssh
+      virtualMachineTemplate:
+        metadata:
+          namespace: default
+        spec:
+          runStrategy: Always
+          template:
+            spec:
+              domain:
+                cpu:
+                  cores: 2
+                devices:
+                  disks:
+                  - disk:
+                      bus: virtio
+                    name: containervolume
+                  networkInterfaceMultiqueue: true
+                memory:
+                  guest: 4Gi
+              evictionStrategy: External
+              volumes:
+              - containerDisk:
+                  image: quay.io/capk/ubuntu-2404-container-disk:v1.32.1
+                name: containervolume
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: quick-start-default-worker-bootstraptemplate
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration: {}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: quick-start
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 10.36.0.0/16
+    services:
+      cidrBlocks:
+      - 10.96.0.0/16
+  topology:
+    class: quick-start
+    classNamespace: default
+    version: v1.32.1
+    controlPlane:
+      replicas: 3
+    workers:
+      machineDeployments:
+        - class: default-worker
+          name: md-0
+          replicas: 3
