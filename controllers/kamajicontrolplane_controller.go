@@ -178,7 +178,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if err != nil {
 		log.Info(err.Error() + ", enqueuing back")
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 	// Starting from CAPI v1.8, the ControlPlane provider can set the Control Plane endpoint:
 	// this will make useless the patchCluster function in the future.
