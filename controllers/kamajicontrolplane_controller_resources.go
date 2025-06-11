@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -25,13 +24,13 @@ var ErrEnqueueBack = errors.New("enqueue back")
 
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
-func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) (ctrl.Result, error) {
+func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	log := ctrllog.FromContext(ctx)
 	// Creating a kubeconfig secret for the workload cluster.
 	if secretName := tcp.Status.KubeConfig.Admin.SecretName; len(secretName) == 0 {
 		log.Info("admin kubeconfig still unprocessed by Kamaji, unable to create kubeconfig secret for the workload cluster, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, fmt.Errorf("admin kubeconfig still unprocessed by Kamaji, %w", ErrEnqueueBack)
+		return fmt.Errorf("admin kubeconfig still unprocessed by Kamaji, %w", ErrEnqueueBack)
 	}
 
 	reader := r.client
@@ -43,22 +42,22 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 	if err := r.createOrUpdateKubeconfig(ctx, reader, cluster, kcp, tcp); err != nil {
 		log.Error(err, "unable to replicate kubeconfig secret for the workload cluster")
 
-		return ctrl.Result{}, err
+		return err
 	}
 	// Creating a CA secret for the workload cluster.
 	if secretName := tcp.Status.Certificates.CA.SecretName; len(secretName) == 0 {
 		log.Info("CA still unprocessed by Kamaji, unable to create Certificate Authority secret for the workload cluster, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, fmt.Errorf("CA still unprocessed by Kamaji, %w", ErrEnqueueBack)
+		return fmt.Errorf("CA still unprocessed by Kamaji, %w", ErrEnqueueBack)
 	}
 
 	if err := r.createOrUpdateCertificateAuthority(ctx, reader, cluster, kcp, tcp); err != nil {
 		log.Error(err, "unable to replicate CA secret for the workload cluster")
 
-		return ctrl.Result{}, err
+		return err
 	}
 
-	return ctrl.Result{}, nil
+	return nil
 }
 
 // createOrUpdateCertificateAuthority takes care of translating corev1.Secret from Kamaji to CAPI expected resource,

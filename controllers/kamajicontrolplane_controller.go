@@ -178,7 +178,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if err != nil {
 		log.Info(err.Error() + ", enqueuing back")
 
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 	// Starting from CAPI v1.8, the ControlPlane provider can set the Control Plane endpoint:
 	// this will make useless the patchCluster function in the future.
@@ -233,19 +233,19 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if len(cluster.Spec.ControlPlaneEndpoint.Host) == 0 {
 		log.Info("capiv1beta1.Cluster Control Plane endpoint still unprocessed, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	if !cluster.Status.InfrastructureReady {
 		log.Info("capiv1beta1.Cluster infrastructure is not yet ready, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	if tcp.Status.Kubernetes.Version.Status == nil {
 		log.Info("kamajiv1alpha1.TenantControlPlane is not yet initialized, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	if *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady && !kcp.Status.Initialized {
@@ -268,7 +268,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if !kcp.Status.Initialized {
 		log.Info("kcpv1alpha1.KamajiControlPlane is not yet initialized, enqueuing back")
 
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// Updating KamajiControlPlane ready status, along with scaling values
@@ -302,7 +302,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	var result ctrl.Result
 
 	TrackConditionType(&conditions, kcpv1alpha1.KubeadmResourcesCreatedReadyConditionType, kcp.Generation, func() error {
-		result, err = r.createRequiredResources(ctx, remoteClient, cluster, kcp, tcp)
+		err = r.createRequiredResources(ctx, remoteClient, cluster, kcp, tcp)
 
 		return err
 	})
@@ -311,7 +311,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		if goerrors.Is(err, ErrEnqueueBack) {
 			log.Info(err.Error())
 
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 
 		log.Error(err, "unable to satisfy Secrets contract")
@@ -338,7 +338,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		if goerrors.Is(err, ErrEnqueueBack) {
 			log.Info(err.Error())
 
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 
 		log.Error(err, "unable to report kcpv1alpha1.KamajiControlPlane readiness")
