@@ -13,7 +13,7 @@ require (
 	k8s.io/client-go v0.34.0-alpha.0
 	k8s.io/component-base v0.34.0-alpha.0
 	k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979
-	sigs.k8s.io/cluster-api v1.10.2
+	sigs.k8s.io/cluster-api v1.10.3
 	sigs.k8s.io/controller-runtime v0.21.0
 )
 
