@@ -1519,6 +1519,11 @@ spec:
                       deploymentNamespace:
                         description: The Namespace where the resulting TenantControlPlane must be deployed to.
                         type: string
+                      keepDefaultName:
+                        description: |-
+                          Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
+                          May lead to collisions in external cluster, use with care.
+                        type: boolean
                       kubeconfigSecretKey:
                         description: The key used to extract the kubeconfig from the specified Secret.
                         minLength: 1
@@ -8241,6 +8246,11 @@ spec:
                               deploymentNamespace:
                                 description: The Namespace where the resulting TenantControlPlane must be deployed to.
                                 type: string
+                              keepDefaultName:
+                                description: |-
+                                  Set tenantControlPlane name to corresponding kamajiControlPlane's name instead of "kcp-<KCP_UID>".
+                                  May lead to collisions in external cluster, use with care.
+                                type: boolean
                               kubeconfigSecretKey:
                                 description: The key used to extract the kubeconfig from the specified Secret.
                                 minLength: 1
