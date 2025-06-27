@@ -1554,6 +1554,9 @@ spec:
                     - kubeconfigSecretKey
                     - kubeconfigSecretName
                     type: object
+                    x-kubernetes-validations:
+                    - message: DeploymentName is required once set
+                      rule: '!has(oldSelf.deploymentName) || has(self.deploymentName)'
                   extraContainers:
                     items:
                       description: A single application container that you want to run within a pod.
@@ -8281,6 +8284,9 @@ spec:
                             - kubeconfigSecretKey
                             - kubeconfigSecretName
                             type: object
+                            x-kubernetes-validations:
+                            - message: DeploymentName is required once set
+                              rule: '!has(oldSelf.deploymentName) || has(self.deploymentName)'
                           extraContainers:
                             items:
                               description: A single application container that you want to run within a pod.
