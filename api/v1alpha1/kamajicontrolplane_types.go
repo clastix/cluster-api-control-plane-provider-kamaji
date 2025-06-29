@@ -160,7 +160,7 @@ type KamajiControlPlaneFields struct {
 	Scheduler         ControlPlaneComponent `json:"scheduler,omitempty"`
 	Kine              KineComponent         `json:"kine,omitempty"`
 	// Configure the Kubelet options, such as the preferred address types, or the expected cgroupfs.
-	// +kubebuilder:default={preferredAddressTypes:{"Hostname","InternalIP","ExternalIP"},cgroupfs:"systemd"}
+	// +kubebuilder:default={preferredAddressTypes:{"InternalIP","ExternalIP","Hostname"},cgroupfs:"systemd"}
 	Kubelet kamajiv1alpha1.KubeletSpec `json:"kubelet,omitempty"`
 	// Configure how the TenantControlPlane should be exposed.
 	// +kubebuilder:default={serviceType:"LoadBalancer"}

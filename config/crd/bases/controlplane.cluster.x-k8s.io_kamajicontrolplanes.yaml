@@ -6609,9 +6609,9 @@ spec:
                 default:
                   cgroupfs: systemd
                   preferredAddressTypes:
-                  - Hostname
                   - InternalIP
                   - ExternalIP
+                  - Hostname
                 description: Configure the Kubelet options, such as the preferred
                   address types, or the expected cgroupfs.
                 properties:
