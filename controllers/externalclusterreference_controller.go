@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -94,6 +95,12 @@ func (r *ExternalClusterReferenceReconciler) Reconcile(ctx context.Context, req 
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 			Scheme:  r.Client.Scheme(),
 			Metrics: server.Options{BindAddress: "0"},
+			Cache: cache.Options{
+				ByObject: map[client.Object]cache.ByObject{
+					// Reduce memory overhead by only caching watched resources.
+					&kamajiv1alpha1.TenantControlPlane{}: {},
+				},
+			},
 		})
 		if err != nil {
 			log.Error(err, "cannot generate manager")
