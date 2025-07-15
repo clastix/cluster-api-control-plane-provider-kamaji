@@ -250,3 +250,7 @@ type KamajiControlPlaneList struct {
 func init() {
 	SchemeBuilder.Register(&KamajiControlPlane{}, &KamajiControlPlaneList{})
 }
+
+const (
+	KamajiControlPlaneUIDLabel = "kamaji.clastix.io/kamajicontrolplane-uid"
+)

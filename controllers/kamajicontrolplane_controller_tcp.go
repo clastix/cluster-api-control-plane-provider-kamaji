@@ -9,20 +9,21 @@ import (
 	"net"
 	"strings"
 
+	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 )
 
 var ErrUnsupportedCertificateSAN = errors.New("a certificate SAN must be made of host only with no port")
+var ErrTCPCollision = errors.New("Collision on remote TenantControlPlanes")
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
@@ -56,6 +57,23 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			}
 
 			tcp.Labels = kcp.Labels
+
+			// Check the KCP-UID label to avoid collsions if 2 clusters with the same name
+			// use the same namespace with externalClusterReference
+			// if label is not present, it will be added
+			if isDelegatedExternally && kcp.Spec.Deployment.ExternalClusterReference.DeploymentName != "" {
+				var tcpInCluster kamajiv1alpha1.TenantControlPlane
+				remoteClient.Get(ctx, types.NamespacedName{Namespace: tcp.Namespace, Name: tcp.Name}, &tcpInCluster)
+
+				if val := tcpInCluster.Labels[kcpv1alpha1.KamajiControlPlaneUIDLabel]; val != "" {
+					if val != string(kcp.UID) {
+						return errors.Wrap(ErrTCPCollision, fmt.Sprintf("Collision on TenantControlPlane %s: Value of label '%s' does not match.", tcp.Name, kcpv1alpha1.KamajiControlPlaneUIDLabel))
+					}
+					// label matches our kcp UID -> update TCP (nothing to do here)
+				} else { // label not present -> claim this TCP by adding it
+					tcp.Labels[kcpv1alpha1.KamajiControlPlaneUIDLabel] = string(kcp.UID)
+				}
+			}
 
 			if kubeconfigSecretKey := kcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation]; kubeconfigSecretKey != "" {
 				tcp.Annotations[kamajiv1alpha1.KubeconfigSecretKeyAnnotation] = kubeconfigSecretKey
