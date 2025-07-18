@@ -58,6 +58,23 @@ func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v
 	var tcp kamajiv1alpha1.TenantControlPlane
 	tcp.Name, tcp.Namespace = externalclusterreference.GenerateRemoteTenantControlPlaneNames(kcp)
 
+	// Check KamajiControlPlaneUIDLabel on TCP, to avoid deleting it if it doesn't belong to our KCP
+	if kcp.Spec.Deployment.ExternalClusterReference.DeploymentName != "" {
+
+		if err := remoteClient.Get(ctx, types.NamespacedName{Namespace: tcp.Namespace, Name: tcp.Name}, &tcp); err != nil {
+			if errors.IsNotFound(err) {
+				log.Info("resource may have been deleted")
+			}
+			log.Error(err, "unable to get remote TenantControlPlane")
+		}
+
+		if val := tcp.Labels[v1alpha1.KamajiControlPlaneUIDLabel]; val != "" && val != string(kcp.UID) {
+			log.Info("Did not delete remote TenantControlPlane as it belongs to another KamajiControlPlane")
+
+			return nil
+		}
+	}
+
 	if tcpErr := remoteClient.Delete(ctx, &tcp); tcpErr != nil {
 		if errors.IsNotFound(tcpErr) {
 			log.Info("remote TenantControlPlane is already deleted")
