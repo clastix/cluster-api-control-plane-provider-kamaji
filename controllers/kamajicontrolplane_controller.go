@@ -225,6 +225,23 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 			return ctrl.Result{}, err
 		}
+
+		// Patch main Cluster resource controlPlaneEndpoint to override what infrastructure providers might set
+		TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
+			endpoint, port, parseErr := r.controlPlaneEndpoint(&kcp, tcp.Status.ControlPlaneEndpoint)
+			if parseErr != nil {
+				return goerrors.Wrap(parseErr, "cannot parse ControlPlaneEndpoint for main cluster patch")
+			}
+			err = r.patchMainClusterEndpoint(ctx, &cluster, endpoint, port)
+
+			return err
+		})
+
+		if err != nil {
+			log.Error(err, "cannot patch main capiv1beta1.Cluster controlPlaneEndpoint")
+
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Before continuing, the Cluster object needs some validation, such as:
