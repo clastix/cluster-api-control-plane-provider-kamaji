@@ -95,6 +95,8 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
 	case "KubevirtCluster":
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, true)
+	case "DockerCluster":
+		return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
 	case "Metal3Cluster":
 		return r.checkGenericCluster(ctx, cluster, endpoint, port)
 	case "NutanixCluster":
@@ -133,7 +135,7 @@ func (r *KamajiControlPlaneReconciler) checkOrPatchGenericCluster(ctx context.Co
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=awsclusters;azureclusters;hetznerclusters;kubevirtclusters;nutanixclusters;packetclusters;ionoscloudclusters,verbs=patch;get;list;watch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=awsclusters;azureclusters;hetznerclusters;kubevirtclusters;dockercluster;nutanixclusters;packetclusters;ionoscloudclusters,verbs=patch;get;list;watch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status;nutanixclusters/status;packetclusters/status,verbs=patch
 
 func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64, patchStatus bool) error {

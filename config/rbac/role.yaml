@@ -54,6 +54,7 @@ rules:
   resources:
   - awsclusters
   - azureclusters
+  - dockercluster
   - hetznerclusters
   - ionoscloudclusters
   - kubevirtclusters
