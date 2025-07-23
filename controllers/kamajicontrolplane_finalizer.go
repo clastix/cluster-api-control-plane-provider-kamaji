@@ -68,7 +68,7 @@ func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v
 			log.Error(err, "unable to get remote TenantControlPlane")
 		}
 
-		if val := tcp.Labels[v1alpha1.KamajiControlPlaneUIDLabel]; val != "" && val != string(kcp.UID) {
+		if val := tcp.GetLabels()[v1alpha1.KamajiControlPlaneUIDLabel]; val != "" && val != string(kcp.UID) {
 			log.Info("Did not delete remote TenantControlPlane as it belongs to another KamajiControlPlane")
 
 			return nil
