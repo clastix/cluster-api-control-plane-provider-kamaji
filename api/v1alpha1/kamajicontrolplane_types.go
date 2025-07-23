@@ -251,6 +251,9 @@ func init() {
 	SchemeBuilder.Register(&KamajiControlPlane{}, &KamajiControlPlaneList{})
 }
 
+// This label is used to detect collisions when using ExternalClusterReference.DeploymentName
+// It allows to keep track of the KCP owning a given TCP when the TCP name is not the default
+// "kcp-<KCP_UID>"
 const (
 	KamajiControlPlaneUIDLabel = "kamaji.clastix.io/kamajicontrolplane-uid"
 )
