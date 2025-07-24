@@ -248,3 +248,21 @@ func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context
 
 	return nil
 }
+
+func (r *KamajiControlPlaneReconciler) patchMainClusterEndpoint(ctx context.Context, cluster *capiv1beta1.Cluster, endpoint string, port int64) error {
+	patchHelper, err := patch.NewHelper(cluster, r.client)
+	if err != nil {
+		return errors.Wrap(err, "unable to create patch helper for cluster")
+	}
+
+	cluster.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
+		Host: endpoint,
+		Port: int32(port),
+	}
+
+	if err = patchHelper.Patch(ctx, cluster); err != nil {
+		return errors.Wrap(err, "cannot perform PATCH update for the Cluster resource")
+	}
+
+	return nil
+}
