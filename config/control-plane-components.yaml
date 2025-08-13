@@ -109,6 +109,7 @@ spec:
                       agent:
                         default:
                           image: registry.k8s.io/kas-network-proxy/proxy-agent
+                          mode: DaemonSet
                           version: v0.28.6
                         properties:
                           extraArgs:
@@ -120,10 +121,31 @@ spec:
                             items:
                               type: string
                             type: array
+                          hostNetwork:
+                            default: false
+                            description: |-
+                              HostNetwork enables the konnectivity agent to use the Host network namespace.
+                              By enabling this mode, the Agent doesn't need to wait for the CNI initialisation,
+                              enabling a sort of out-of-band access to nodes for troubleshooting scenarios,
+                              or when the agent needs direct access to the host network.
+                            type: boolean
                           image:
                             default: registry.k8s.io/kas-network-proxy/proxy-agent
                             description: AgentImage defines the container image for Konnectivity's agent.
                             type: string
+                          mode:
+                            default: DaemonSet
+                            description: 'Mode allows specifying the Agent deployment mode: Deployment, or DaemonSet (default).'
+                            enum:
+                            - DaemonSet
+                            - Deployment
+                            type: string
+                          replicas:
+                            description: |-
+                              Replicas defines the number of replicas when Mode is Deployment.
+                              Must be 0 if Mode is DaemonSet.
+                            format: int32
+                            type: integer
                           tolerations:
                             default:
                             - key: CriticalAddonsOnly
@@ -173,6 +195,9 @@ spec:
                             description: Version for Konnectivity agent.
                             type: string
                         type: object
+                        x-kubernetes-validations:
+                        - message: replicas must be 0 when mode is DaemonSet, and greater than 0 when mode is Deployment
+                          rule: '!(self.mode == ''DaemonSet'' && has(self.replicas) && self.replicas != 0) && !(self.mode == ''Deployment'' && self.replicas == 0)'
                       server:
                         default:
                           image: registry.k8s.io/kas-network-proxy/proxy-server
@@ -620,6 +645,16 @@ spec:
               dataStoreSchema:
                 description: DataStoreSchema allows to specify the name of the database (for relational DataStores) or the key prefix (for etcd)
                 type: string
+              dataStoreUsername:
+                description: |-
+                  DataStoreUsername allows to specify the username of the database (for relational DataStores). This
+                  value is optional and immutable. Note that Kamaji currently doesn't ensure that DataStoreUsername values are unique. It's up
+                  to the user to avoid clashes between different TenantControlPlanes. If not set upon creation, Kamaji will default the
+                  DataStoreUsername by concatenating the namespace and name of the TenantControlPlane.
+                type: string
+                x-kubernetes-validations:
+                - message: changing the dataStoreUsername is not supported
+                  rule: self == oldSelf
               deployment:
                 description: Configure how the TenantControlPlane Deployment object should be configured.
                 properties:
@@ -6335,7 +6370,7 @@ spec:
                 properties:
                   cgroupfs:
                     description: |-
-                      CGroupFS defines the  cgroup driver for Kubelet
+                      CGroupFS defines the cgroup driver for Kubelet
                       https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/
                     enum:
                     - systemd
@@ -6343,12 +6378,12 @@ spec:
                     type: string
                   preferredAddressTypes:
                     default:
-                    - Hostname
                     - InternalIP
                     - ExternalIP
+                    - Hostname
                     description: |-
                       Ordered list of the preferred NodeAddressTypes to use for kubelet connections.
-                      Default to Hostname, InternalIP, ExternalIP.
+                      Default to InternalIP, ExternalIP, Hostname.
                     items:
                       enum:
                       - Hostname
@@ -6359,6 +6394,7 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                    x-kubernetes-list-type: set
                 type: object
               network:
                 default:
@@ -6846,6 +6882,7 @@ spec:
                               agent:
                                 default:
                                   image: registry.k8s.io/kas-network-proxy/proxy-agent
+                                  mode: DaemonSet
                                   version: v0.28.6
                                 properties:
                                   extraArgs:
@@ -6857,10 +6894,31 @@ spec:
                                     items:
                                       type: string
                                     type: array
+                                  hostNetwork:
+                                    default: false
+                                    description: |-
+                                      HostNetwork enables the konnectivity agent to use the Host network namespace.
+                                      By enabling this mode, the Agent doesn't need to wait for the CNI initialisation,
+                                      enabling a sort of out-of-band access to nodes for troubleshooting scenarios,
+                                      or when the agent needs direct access to the host network.
+                                    type: boolean
                                   image:
                                     default: registry.k8s.io/kas-network-proxy/proxy-agent
                                     description: AgentImage defines the container image for Konnectivity's agent.
                                     type: string
+                                  mode:
+                                    default: DaemonSet
+                                    description: 'Mode allows specifying the Agent deployment mode: Deployment, or DaemonSet (default).'
+                                    enum:
+                                    - DaemonSet
+                                    - Deployment
+                                    type: string
+                                  replicas:
+                                    description: |-
+                                      Replicas defines the number of replicas when Mode is Deployment.
+                                      Must be 0 if Mode is DaemonSet.
+                                    format: int32
+                                    type: integer
                                   tolerations:
                                     default:
                                     - key: CriticalAddonsOnly
@@ -6910,6 +6968,9 @@ spec:
                                     description: Version for Konnectivity agent.
                                     type: string
                                 type: object
+                                x-kubernetes-validations:
+                                - message: replicas must be 0 when mode is DaemonSet, and greater than 0 when mode is Deployment
+                                  rule: '!(self.mode == ''DaemonSet'' && has(self.replicas) && self.replicas != 0) && !(self.mode == ''Deployment'' && self.replicas == 0)'
                               server:
                                 default:
                                   image: registry.k8s.io/kas-network-proxy/proxy-server
@@ -7342,6 +7403,16 @@ spec:
                       dataStoreSchema:
                         description: DataStoreSchema allows to specify the name of the database (for relational DataStores) or the key prefix (for etcd)
                         type: string
+                      dataStoreUsername:
+                        description: |-
+                          DataStoreUsername allows to specify the username of the database (for relational DataStores). This
+                          value is optional and immutable. Note that Kamaji currently doesn't ensure that DataStoreUsername values are unique. It's up
+                          to the user to avoid clashes between different TenantControlPlanes. If not set upon creation, Kamaji will default the
+                          DataStoreUsername by concatenating the namespace and name of the TenantControlPlane.
+                        type: string
+                        x-kubernetes-validations:
+                        - message: changing the dataStoreUsername is not supported
+                          rule: self == oldSelf
                       deployment:
                         description: Configure how the TenantControlPlane Deployment object should be configured.
                         properties:
@@ -13057,7 +13128,7 @@ spec:
                         properties:
                           cgroupfs:
                             description: |-
-                              CGroupFS defines the  cgroup driver for Kubelet
+                              CGroupFS defines the cgroup driver for Kubelet
                               https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/
                             enum:
                             - systemd
@@ -13065,12 +13136,12 @@ spec:
                             type: string
                           preferredAddressTypes:
                             default:
-                            - Hostname
                             - InternalIP
                             - ExternalIP
+                            - Hostname
                             description: |-
                               Ordered list of the preferred NodeAddressTypes to use for kubelet connections.
-                              Default to Hostname, InternalIP, ExternalIP.
+                              Default to InternalIP, ExternalIP, Hostname.
                             items:
                               enum:
                               - Hostname
@@ -13081,6 +13152,7 @@ spec:
                               type: string
                             minItems: 1
                             type: array
+                            x-kubernetes-list-type: set
                         type: object
                       network:
                         default:
