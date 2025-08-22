@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/clastix/kamaji v1.0.1-0.20250808063724-f0f41bd0da43
-	github.com/onsi/ginkgo/v2 v2.24.0
+	github.com/onsi/ginkgo/v2 v2.25.0
 	github.com/onsi/gomega v1.38.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.7
