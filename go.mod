@@ -8,10 +8,10 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.10
-	k8s.io/api v0.34.0
-	k8s.io/apimachinery v0.34.0
-	k8s.io/client-go v0.34.0
-	k8s.io/component-base v0.34.0
+	k8s.io/api v0.34.1
+	k8s.io/apimachinery v0.34.1
+	k8s.io/client-go v0.34.1
+	k8s.io/component-base v0.34.1
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/cluster-api v1.10.4
 	sigs.k8s.io/controller-runtime v0.22.1
