@@ -175,4 +175,4 @@ spec:
       numSockets: ${NUM_SOCKETS}
       sourceNode: '${SOURCE_NODE}'
       templateID: ${TEMPLATE_ID}
-      pool: '${CLUSTER_NAME}-capi-pool'
+      pool: '${POOL_NAME}'
