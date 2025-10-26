@@ -93,6 +93,6 @@ we suggest getting in touch with CLASTIX Labs to achieve commercial support.
 [CLASTIX](https://clastix.io/) is the commercial company behind Kamaji and the Cluster API Control Plane provider.
 
 If you're looking to run Kamaji in production and would like to learn more, **CLASTIX** can help by offering [Open Source support plans](https://clastix.io/support),
-as well as providing a comprehensive Enterprise Platform named [CLASTIX Enterprise Platform](https://clastix.cloud/), built on top of the Kamaji and [Capsule](https://capsule.clastix.io/) project (now donated to CNCF as a sandbox project).
+as well as providing a comprehensive Enterprise Platform named [CLASTIX Enterprise Platform](https://clastix.cloud/), built on top of the Kamaji and [Capsule](https://capsule.clastix.io/) project (now donated to CNCF as a Sandbox project).
 
 Feel free to get in touch with the provided [Contact form](https://clastix.io/contact).
