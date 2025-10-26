@@ -47,7 +47,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 ### 🛠 Development
 
 This document describes how to use kind and [Tilt](https://tilt.dev/) for a simplified workflow that offers easy deployments and rapid iterative builds.
-Before the next steps, make sure the initial setup for development environment steps is complete.
+Before the next steps, make sure the initial setup for development environment step is complete.
 
 1. Create a `kind` cluster according to the [CAPI Infrastructure Provider requirements](https://cluster-api.sigs.k8s.io/user/quick-start#install-andor-configure-a-kubernetes-cluster) you're planning to use
 2. [Install Cluster API](https://cluster-api.sigs.k8s.io/user/quick-start#initialize-the-management-cluster) with the `clusterctl` CLI
@@ -60,7 +60,7 @@ Before the next steps, make sure the initial setup for development environment s
 ### 🏷️ Versioning
 
 Versioning adheres to the [Semantic Versioning](http://semver.org/) principles.
-A full list of the available release is available in the GitHub repository's [**Release** section](https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases).
+A full list of the available releases are available in the GitHub repository's [**Release** section](https://github.com/clastix/cluster-api-control-plane-provider-kamaji/releases).
 
 ### 🤝 Contributions
 
