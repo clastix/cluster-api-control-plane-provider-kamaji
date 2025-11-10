@@ -95,6 +95,8 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
 	case "KubevirtCluster":
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, true)
+	case "VirtinkCluster":
+		return r.patchGenericCluster(ctx, cluster, endpoint, port, true)
 	case "Metal3Cluster":
 		return r.checkGenericCluster(ctx, cluster, endpoint, port)
 	case "NutanixCluster":
