@@ -12,7 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -24,7 +24,7 @@ var ErrEnqueueBack = errors.New("enqueue back")
 
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
-func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta2.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	log := ctrllog.FromContext(ctx)
 	// Creating a kubeconfig secret for the workload cluster.
 	if secretName := tcp.Status.KubeConfig.Admin.SecretName; len(secretName) == 0 {
@@ -64,7 +64,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 // also in regard to the naming conventions according to the Cluster API contracts about Kubeconfig.
 //
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
-func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, reader client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, reader client.Client, cluster capiv1beta2.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiCA := &corev1.Secret{}
 	capiCA.Name = cluster.Name + "-ca"
 	capiCA.Namespace = cluster.Namespace
@@ -99,7 +99,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 				labels = map[string]string{}
 			}
 
-			labels[capiv1beta1.ClusterNameLabel] = cluster.Name
+			labels[capiv1beta2.ClusterNameLabel] = cluster.Name
 			labels["kamaji.clastix.io/component"] = "capi"
 			labels["kamaji.clastix.io/secret"] = "ca"
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
@@ -111,7 +111,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 				corev1.TLSCertKey:       crt,
 				corev1.TLSPrivateKeyKey: key,
 			}
-			capiCA.Type = capiv1beta1.ClusterSecretType
+			capiCA.Type = capiv1beta2.ClusterSecretType
 
 			return controllerutil.SetControllerReference(&kcp, capiCA, r.client.Scheme())
 		})
@@ -129,7 +129,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 // also in regard to the naming conventions according to the Cluster API contracts about kubeconfig.
 //
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
-func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, reader client.Client, cluster capiv1beta1.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, reader client.Client, cluster capiv1beta2.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiAdminKubeconfig := &corev1.Secret{}
 	capiAdminKubeconfig.Name = cluster.Name + "-kubeconfig"
 	capiAdminKubeconfig.Namespace = cluster.Namespace
@@ -149,7 +149,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 				labels = map[string]string{}
 			}
 
-			labels[capiv1beta1.ClusterNameLabel] = cluster.Name
+			labels[capiv1beta2.ClusterNameLabel] = cluster.Name
 			labels["kamaji.clastix.io/component"] = "capi"
 			labels["kamaji.clastix.io/secret"] = "kubeconfig"
 			labels["kamaji.clastix.io/cluster"] = cluster.Name
@@ -170,7 +170,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 			capiAdminKubeconfig.Data = map[string][]byte{
 				"value": value,
 			}
-			capiAdminKubeconfig.Type = capiv1beta1.ClusterSecretType
+			capiAdminKubeconfig.Type = capiv1beta2.ClusterSecretType
 
 			return controllerutil.SetControllerReference(&kcp, capiAdminKubeconfig, r.client.Scheme())
 		})
