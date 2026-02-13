@@ -41,7 +41,7 @@ jobs:
           kubectl wait pods -n metallb-system -l app=metallb,component=controller --for=condition=Ready --timeout=10m
           kubectl wait pods -n metallb-system -l app=metallb,component=speaker --for=condition=Ready --timeout=2m
 
-          GW_IP=$(docker network inspect -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}' kind)
+          GW_IP=$(docker network inspect -f '{{range .IPAM.Config}}{{println .Subnet " " .Gateway}}{{end}}' kind | grep -v ':' | awk '{ print $2 }')
           NET_IP=$(echo ${GW_IP} | sed -E 's|^([0-9]+\.[0-9]+)\..*$|\1|g')
           cat <<EOF | sed -E "s|172.19|${NET_IP}|g" | kubectl apply -f -
           apiVersion: metallb.io/v1beta1
