@@ -14,7 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -27,7 +27,7 @@ var ErrUnsupportedCertificateSAN = errors.New("a certificate SAN must be made of
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
 //nolint:funlen,gocognit,cyclop,maintidx
-func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
+func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, remoteClient client.Client, cluster capiv1beta2.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
 	tcp.Namespace = kcp.GetNamespace()
@@ -62,22 +62,20 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			} else {
 				delete(tcp.Annotations, kamajiv1alpha1.KubeconfigSecretKeyAnnotation)
 			}
-			if cluster.Spec.ClusterNetwork != nil {
-				// TenantControlPlane port
-				if apiPort := cluster.Spec.ClusterNetwork.APIServerPort; apiPort != nil {
-					tcp.Spec.NetworkProfile.Port = *apiPort
-				}
-				// TenantControlPlane Services CIDR
-				if serviceCIDR := cluster.Spec.ClusterNetwork.Services; serviceCIDR != nil && len(serviceCIDR.CIDRBlocks) > 0 {
-					tcp.Spec.NetworkProfile.ServiceCIDR = serviceCIDR.CIDRBlocks[0]
-				}
-				// TenantControlPlane Pods CIDR
-				if podsCIDR := cluster.Spec.ClusterNetwork.Pods; podsCIDR != nil && len(podsCIDR.CIDRBlocks) > 0 {
-					tcp.Spec.NetworkProfile.PodCIDR = podsCIDR.CIDRBlocks[0]
-				}
-				// TenantControlPlane cluster domain
-				tcp.Spec.NetworkProfile.ClusterDomain = cluster.Spec.ClusterNetwork.ServiceDomain
+			// TenantControlPlane port
+			tcp.Spec.NetworkProfile.Port = cluster.Spec.ClusterNetwork.APIServerPort
+			// TenantControlPlane Services CIDR
+			serviceCIDR := cluster.Spec.ClusterNetwork.Services
+			if len(serviceCIDR.CIDRBlocks) > 0 {
+				tcp.Spec.NetworkProfile.ServiceCIDR = serviceCIDR.CIDRBlocks[0]
 			}
+			// TenantControlPlane Pods CIDR
+			podsCIDR := cluster.Spec.ClusterNetwork.Pods
+			if len(podsCIDR.CIDRBlocks) > 0 {
+				tcp.Spec.NetworkProfile.PodCIDR = podsCIDR.CIDRBlocks[0]
+			}
+			// TenantControlPlane cluster domain
+			tcp.Spec.NetworkProfile.ClusterDomain = cluster.Spec.ClusterNetwork.ServiceDomain
 			// Replicas
 			tcp.Spec.ControlPlane.Deployment.Replicas = kcp.Spec.Replicas
 			// Version

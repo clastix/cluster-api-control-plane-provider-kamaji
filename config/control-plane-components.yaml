@@ -493,18 +493,19 @@ spec:
                 type: object
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint propagates the endpoint the Kubernetes API Server managed by Kamaji is located.
+                minProperties: 1
                 properties:
                   host:
                     description: host is the hostname on which the API server is serving.
                     maxLength: 512
+                    minLength: 1
                     type: string
                   port:
                     description: port is the port on which the API server is serving.
                     format: int32
+                    maximum: 65535
+                    minimum: 1
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               controllerManager:
                 description: ControlPlaneComponent allows the customization for the given component of the control plane.
@@ -14092,6 +14093,14 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - cluster.x-k8s.io

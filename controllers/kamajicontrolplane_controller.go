@@ -18,8 +18,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/component-base/featuregate"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	conditionsapi "sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -80,18 +81,18 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	// Retrieving the Cluster information
-	cluster := capiv1beta1.Cluster{}
+	cluster := capiv1beta2.Cluster{}
 	cluster.SetName(kcp.GetOwnerReferences()[0].Name)
 	cluster.SetNamespace(kcp.GetNamespace())
 
 	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("capiv1beta1.Cluster resource may have been deleted, withdrawing reconciliation")
+			log.Info("capiv1beta2.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
 		}
 
-		log.Error(err, "unable to get capiv1beta1.Cluster")
+		log.Error(err, "unable to get capiv1beta2.Cluster")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
@@ -199,12 +200,12 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// check that happens latter will never succeed.
 	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("capiv1beta1.Cluster resource may have been deleted, withdrawing reconciliation")
+			log.Info("capiv1beta2.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
 		}
 
-		log.Error(err, "unable to get capiv1beta1.Cluster")
+		log.Error(err, "unable to get capiv1beta2.Cluster")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
@@ -221,7 +222,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		})
 
 		if err != nil {
-			log.Error(err, "cannot patch capiv1beta1.Cluster")
+			log.Error(err, "cannot patch capiv1beta2.Cluster")
 
 			return ctrl.Result{}, err
 		}
@@ -231,13 +232,13 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// 1. an assigned Control Plane endpoint
 	// 2. a ready infrastructure
 	if len(cluster.Spec.ControlPlaneEndpoint.Host) == 0 {
-		log.Info("capiv1beta1.Cluster Control Plane endpoint still unprocessed, enqueuing back")
+		log.Info("capiv1beta2.Cluster Control Plane endpoint still unprocessed, enqueuing back")
 
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
-	if !cluster.Status.InfrastructureReady {
-		log.Info("capiv1beta1.Cluster infrastructure is not yet ready, enqueuing back")
+	if conditionsapi.IsFalse(&cluster, capiv1beta2.InfrastructureReadyCondition) {
+		log.Info("capiv1beta2.Cluster infrastructure is not yet ready, enqueuing back")
 
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
