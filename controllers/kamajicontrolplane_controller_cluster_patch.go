@@ -32,17 +32,23 @@ func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alph
 		return "", 0, errors.Wrap(pErr, "cannot convert port to integer")
 	}
 
-	if ingress := controlPlane.Spec.Network.Ingress; ingress != nil {
-		if len(strings.Split(ingress.Hostname, ":")) == 1 {
-			ingress.Hostname += ":443"
+	// Ingress or Gateway API can be used to redefine the control plane endpoint
+	var hostname string
+	switch {
+	case controlPlane.Spec.Network.Ingress != nil:
+		hostname = controlPlane.Spec.Network.Ingress.Hostname
+	case controlPlane.Spec.Network.Gateway != nil:
+		hostname = controlPlane.Spec.Network.Gateway.Hostname
+	}
+	if hostname != "" {
+		if len(strings.Split(hostname, ":")) == 1 {
+			hostname += ":443"
 		}
-
-		if endpoint, strPort, err = net.SplitHostPort(ingress.Hostname); err != nil {
-			return "", 0, errors.Wrap(err, "cannot split the Kamaji Ingress hostname host port pair")
+		if endpoint, strPort, err = net.SplitHostPort(hostname); err != nil {
+			return "", 0, errors.Wrap(err, "cannot split the control plane hostname into endpoint and port")
 		}
-
 		if port, pErr = strconv.ParseInt(strPort, 10, 64); pErr != nil {
-			return "", 0, errors.Wrap(pErr, "cannot convert Kamaji Ingress hostname port pair")
+			return "", 0, errors.Wrap(pErr, "cannot parse the control plane port into an integer")
 		}
 	}
 

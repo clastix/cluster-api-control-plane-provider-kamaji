@@ -7052,6 +7052,44 @@ spec:
                     items:
                       type: string
                     type: array
+                  gateway:
+                    description: |-
+                      When specified, the KamajiControlPlane will be reachable using a Gateway API object
+                      deployed in the management cluster.
+                    properties:
+                      extraAnnotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Defines the extra annotations for the Gateway object.
+                          Useful if you need Gateway or vendor-specific options.
+                        type: object
+                      extraLabels:
+                        additionalProperties:
+                          type: string
+                        description: Defines the extra labels for the Gateway object.
+                        type: object
+                      hostname:
+                        description: |-
+                          Defines the hostname for the Gateway object.
+                          When using a Gateway object the FQDN is automatically added to the Certificate SANs.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Defines the Gateway API name for the Gateway
+                          object.
+                        minLength: 1
+                        type: string
+                      namespace:
+                        description: Defines the Gateway API namespace for the Gateway
+                          object.
+                        minLength: 1
+                        type: string
+                    required:
+                    - hostname
+                    - name
+                    - namespace
+                    type: object
                   ingress:
                     description: |-
                       When specified, the KamajiControlPlane will be reachable using an Ingress object

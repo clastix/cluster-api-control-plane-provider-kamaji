@@ -29,6 +29,27 @@ type KineComponent struct {
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
+type GatewayComponent struct {
+	// Defines the Gateway API name for the Gateway object.
+	// +kubebuilder:required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+	// Defines the Gateway API namespace for the Gateway object.
+	// +kubebuilder:required
+	// +kubebuilder:validation:MinLength=1
+	Namespace string `json:"namespace"`
+	// Defines the hostname for the Gateway object.
+	// When using a Gateway object the FQDN is automatically added to the Certificate SANs.
+	// +kubebuilder:required
+	// +kubebuilder:validation:MinLength=1
+	Hostname string `json:"hostname"`
+	// Defines the extra labels for the Gateway object.
+	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
+	// Defines the extra annotations for the Gateway object.
+	// Useful if you need Gateway or vendor-specific options.
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+}
+
 type IngressComponent struct {
 	// Defines the Ingress Class for the Ingress object.
 	ClassName string `json:"className,omitempty"`
@@ -68,6 +89,9 @@ type LoadBalancerConfig struct {
 type NetworkComponent struct {
 	// Optional configuration for the LoadBalancer service that exposes the Kamaji control plane.
 	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty"`
+	// When specified, the KamajiControlPlane will be reachable using a Gateway API object
+	// deployed in the management cluster.
+	Gateway *GatewayComponent `json:"gateway,omitempty"`
 	// When specified, the KamajiControlPlane will be reachable using an Ingress object
 	// deployed in the management cluster.
 	Ingress *IngressComponent `json:"ingress,omitempty"`
