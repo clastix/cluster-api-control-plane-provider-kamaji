@@ -101,7 +101,9 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 				tcp.Spec.Addons.CoreDNS = kcp.Spec.Addons.CoreDNS.AddonSpec
 			}
 			// Kamaji specific options
-			tcp.Spec.DataStore = kcp.Spec.DataStoreName
+			if kcp.Spec.DataStoreName != "" {
+				tcp.Spec.DataStore = kcp.Spec.DataStoreName
+			}
 			if kcp.Spec.DataStoreSchema != "" {
 				tcp.Spec.DataStoreSchema = kcp.Spec.DataStoreSchema
 			}
