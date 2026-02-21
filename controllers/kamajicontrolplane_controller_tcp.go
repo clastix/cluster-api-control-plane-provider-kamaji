@@ -17,6 +17,7 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
@@ -26,7 +27,7 @@ var ErrUnsupportedCertificateSAN = errors.New("a certificate SAN must be made of
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
-//nolint:funlen,gocognit,cyclop,maintidx
+//nolint:funlen,gocognit,cyclop,maintidx,gocyclo
 func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
@@ -157,6 +158,35 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			}
 
 			tcp.Spec.NetworkProfile.CertSANs = kcp.Spec.Network.CertSANs
+			// GatewayAPI
+			if kcp.Spec.Network.Gateway != nil {
+				// In the case of enabled gateway, adding the FQDN to the CertSANs
+				if tcp.Spec.NetworkProfile.CertSANs == nil {
+					tcp.Spec.NetworkProfile.CertSANs = []string{}
+				}
+
+				host, _, err := net.SplitHostPort(kcp.Spec.Network.Gateway.Hostname)
+				if err != nil {
+					// No port specification, adding bare entry
+					host = kcp.Spec.Network.Gateway.Hostname
+				}
+				tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, host)
+				tcp.Spec.ControlPlane.Gateway = &kamajiv1alpha1.GatewaySpec{
+					Hostname: gatewayv1.Hostname(host),
+					GatewayParentRefs: []gatewayv1.ParentReference{
+						{
+							Name:      gatewayv1.ObjectName(kcp.Spec.Network.Gateway.Name),
+							Namespace: ptr.To(gatewayv1.Namespace(kcp.Spec.Network.Gateway.Namespace)),
+						},
+					},
+					AdditionalMetadata: kamajiv1alpha1.AdditionalMetadata{
+						Labels:      kcp.Spec.Network.Gateway.ExtraLabels,
+						Annotations: kcp.Spec.Network.Gateway.ExtraAnnotations,
+					},
+				}
+			} else {
+				tcp.Spec.ControlPlane.Gateway = nil
+			}
 			// Ingress
 			if kcp.Spec.Network.Ingress != nil {
 				tcp.Spec.ControlPlane.Ingress = &kamajiv1alpha1.IngressSpec{
