@@ -26,7 +26,7 @@ var ErrUnsupportedCertificateSAN = errors.New("a certificate SAN must be made of
 
 //+kubebuilder:rbac:groups=kamaji.clastix.io,resources=tenantcontrolplanes,verbs=get;list;watch;create;update
 
-//nolint:funlen,gocognit,cyclop,maintidx
+//nolint:funlen,gocognit,cyclop,maintidx,gocyclo
 func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx context.Context, remoteClient client.Client, cluster capiv1beta1.Cluster, kcp kcpv1alpha1.KamajiControlPlane) (*kamajiv1alpha1.TenantControlPlane, error) {
 	tcp := &kamajiv1alpha1.TenantControlPlane{}
 	tcp.Name = kcp.GetName()
@@ -101,7 +101,9 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 				tcp.Spec.Addons.CoreDNS = kcp.Spec.Addons.CoreDNS.AddonSpec
 			}
 			// Kamaji specific options
-			tcp.Spec.DataStore = kcp.Spec.DataStoreName
+			if kcp.Spec.DataStoreName != "" {
+				tcp.Spec.DataStore = kcp.Spec.DataStoreName
+			}
 			if kcp.Spec.DataStoreSchema != "" {
 				tcp.Spec.DataStoreSchema = kcp.Spec.DataStoreSchema
 			}
