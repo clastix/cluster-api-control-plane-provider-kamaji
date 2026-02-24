@@ -20,6 +20,8 @@ type ControlPlaneComponent struct {
 	// With no value, the default images will be used.
 	// +kubebuilder:validation:MinLength=1
 	ContainerImageName string `json:"containerImageName,omitempty"`
+	// Probes defines per-probe-type configuration.
+	Probes *kamajiv1alpha1.ProbeSet `json:"probes,omitempty"`
 }
 
 // KineComponent allows the customization for the kine component of the control plane.
@@ -159,6 +161,10 @@ type DeploymentComponent struct {
 	// When this value is nil, the Cluster API management cluster will be used as a target.
 	// The ExternalClusterReference feature gate must be enabled with one of the available flags.
 	ExternalClusterReference *ExternalClusterReference `json:"externalClusterReference,omitempty"`
+	// Probes defines probe configuration for Control Plane components.
+	// Global probe settings (Liveness, Readiness, Startup) apply to all components.
+	// Control Plane Component customisation has priority over these.
+	Probes *kamajiv1alpha1.ProbeSet `json:"probes,omitempty"`
 }
 
 type KamajiControlPlaneFields struct {

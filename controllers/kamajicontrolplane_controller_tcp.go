@@ -239,6 +239,25 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.AdditionalContainers = kcp.Spec.Deployment.ExtraContainers
 			tcp.Spec.ControlPlane.Deployment.AdditionalVolumes = kcp.Spec.Deployment.ExtraVolumes
 
+			if kcp.Spec.Deployment.Probes == nil ||
+				kcp.Spec.ApiServer.Probes == nil ||
+				kcp.Spec.ControllerManager.Probes == nil ||
+				kcp.Spec.Scheduler.Probes == nil {
+				tcp.Spec.ControlPlane.Deployment.Probes = nil
+			} else {
+				tcp.Spec.ControlPlane.Deployment.Probes = &kamajiv1alpha1.ControlPlaneProbes{
+					APIServer:         kcp.Spec.ApiServer.Probes,
+					ControllerManager: kcp.Spec.ControllerManager.Probes,
+					Scheduler:         kcp.Spec.Scheduler.Probes,
+				}
+
+				if kcp.Spec.Deployment.Probes != nil {
+					tcp.Spec.ControlPlane.Deployment.Probes.Liveness = kcp.Spec.Deployment.Probes.Liveness
+					tcp.Spec.ControlPlane.Deployment.Probes.Readiness = kcp.Spec.Deployment.Probes.Readiness
+					tcp.Spec.ControlPlane.Deployment.Probes.Startup = kcp.Spec.Deployment.Probes.Startup
+				}
+			}
+
 			if !isDelegatedExternally {
 				return controllerutil.SetControllerReference(&kcp, tcp, k8sClient.Scheme())
 			}
