@@ -17,6 +17,7 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
@@ -159,6 +160,35 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			}
 
 			tcp.Spec.NetworkProfile.CertSANs = kcp.Spec.Network.CertSANs
+			// GatewayAPI
+			if kcp.Spec.Network.Gateway != nil {
+				// In the case of enabled gateway, adding the FQDN to the CertSANs
+				if tcp.Spec.NetworkProfile.CertSANs == nil {
+					tcp.Spec.NetworkProfile.CertSANs = []string{}
+				}
+
+				host, _, err := net.SplitHostPort(kcp.Spec.Network.Gateway.Hostname)
+				if err != nil {
+					// No port specification, adding bare entry
+					host = kcp.Spec.Network.Gateway.Hostname
+				}
+				tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, host)
+				tcp.Spec.ControlPlane.Gateway = &kamajiv1alpha1.GatewaySpec{
+					Hostname: gatewayv1.Hostname(host),
+					GatewayParentRefs: []gatewayv1.ParentReference{
+						{
+							Name:      gatewayv1.ObjectName(kcp.Spec.Network.Gateway.Name),
+							Namespace: ptr.To(gatewayv1.Namespace(kcp.Spec.Network.Gateway.Namespace)),
+						},
+					},
+					AdditionalMetadata: kamajiv1alpha1.AdditionalMetadata{
+						Labels:      kcp.Spec.Network.Gateway.ExtraLabels,
+						Annotations: kcp.Spec.Network.Gateway.ExtraAnnotations,
+					},
+				}
+			} else {
+				tcp.Spec.ControlPlane.Gateway = nil
+			}
 			// Ingress
 			if kcp.Spec.Network.Ingress != nil {
 				tcp.Spec.ControlPlane.Ingress = &kamajiv1alpha1.IngressSpec{
