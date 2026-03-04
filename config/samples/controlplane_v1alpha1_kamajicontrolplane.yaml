@@ -10,6 +10,9 @@ metadata:
   name: kamajicontrolplane-sample
 spec:
   dataStoreName: default
+  # dataStoreOverrides:
+  #   - resource: /events
+  #     dataStore: events-etcd
   addons:
     coreDNS: { }
     konnectivity: { }

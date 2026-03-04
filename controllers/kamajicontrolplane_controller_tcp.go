@@ -111,6 +111,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			if kcp.Spec.DataStoreUsername != "" {
 				tcp.Spec.DataStoreUsername = kcp.Spec.DataStoreUsername
 			}
+			tcp.Spec.DataStoreOverrides = kcp.Spec.DataStoreOverrides
 			tcp.Spec.Kubernetes.AdmissionControllers = kcp.Spec.AdmissionControllers
 			tcp.Spec.ControlPlane.Deployment.RegistrySettings.Registry = kcp.Spec.ContainerRegistry
 			// Volume mounts
