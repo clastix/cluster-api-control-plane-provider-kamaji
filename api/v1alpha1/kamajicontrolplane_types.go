@@ -179,6 +179,8 @@ type KamajiControlPlaneFields struct {
 	// DataStoreUsername by concatenating the namespace and name of the TenantControlPlane.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="changing the dataStoreUsername is not supported"
 	DataStoreUsername string `json:"dataStoreUsername,omitempty"`
+	// DataStoreOverrides defines which Kubernetes resources will be stored in dedicated datastores.
+	DataStoreOverrides []kamajiv1alpha1.DataStoreOverride `json:"dataStoreOverrides,omitempty"`
 	// The addons that must be managed by Kamaji, such as CoreDNS, kube-proxy, and konnectivity.
 	Addons AddonsSpec `json:"addons,omitempty"`
 	// List of the admission controllers to configure for the TenantControlPlane kube-apiserver.
