@@ -15270,7 +15270,7 @@ spec:
         - --dynamic-infrastructure-clusters=${CACPPK_INFRASTRUCTURE_CLUSTERS:= }
         command:
         - /manager
-        image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.17.0
+        image: docker.io/clastix/cluster-api-control-plane-provider-kamaji:v0.18.0
         livenessProbe:
           httpGet:
             path: /healthz
