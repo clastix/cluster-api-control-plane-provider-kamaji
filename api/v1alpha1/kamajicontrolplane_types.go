@@ -101,7 +101,12 @@ type NetworkComponent struct {
 	ServiceType kamajiv1alpha1.ServiceType `json:"serviceType,omitempty"`
 	// This field can be used in case of pre-assigned address, such as a VIP,
 	// helping when serviceType is NodePort.
-	ServiceAddress     string            `json:"serviceAddress,omitempty"`
+	ServiceAddress string `json:"serviceAddress,omitempty"`
+	// AdvertiseAddress is the address advertised to tenant-side consumers (workers, konnectivity).
+	// When set, the management address (serviceAddress or LoadBalancer IP) is used for CAPI
+	// cluster-cache, while this address is used for kubeadm ControlPlaneEndpoint and cluster-info.
+	// Both addresses are included in the API server certificate SANs.
+	AdvertiseAddress string `json:"advertiseAddress,omitempty"`
 	ServiceLabels      map[string]string `json:"serviceLabels,omitempty"`
 	ServiceAnnotations map[string]string `json:"serviceAnnotations,omitempty"`
 	// Configure additional Subject Address Names for the kube-apiserver certificate,

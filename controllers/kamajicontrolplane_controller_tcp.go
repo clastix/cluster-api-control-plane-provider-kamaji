@@ -148,6 +148,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.Kubernetes.Kubelet = kcp.Spec.Kubelet
 			// Network
 			tcp.Spec.NetworkProfile.Address = kcp.Spec.Network.ServiceAddress
+			tcp.Spec.NetworkProfile.AdvertiseAddress = kcp.Spec.Network.AdvertiseAddress
 			tcp.Spec.ControlPlane.Service.ServiceType = kcp.Spec.Network.ServiceType
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Labels = kcp.Spec.Network.ServiceLabels
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Annotations = kcp.Spec.Network.ServiceAnnotations
