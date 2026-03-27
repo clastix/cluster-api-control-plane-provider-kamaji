@@ -103,6 +103,8 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, true)
 	case "Metal3Cluster":
 		return r.checkGenericCluster(ctx, cluster, endpoint, port)
+	case "MetalStackCluster":
+		return r.checkGenericCluster(ctx, cluster, endpoint, port)
 	case "NutanixCluster":
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, true)
 	case "OpenStackCluster":
@@ -178,7 +180,7 @@ func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, 
 	return nil
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metal3clusters,verbs=get;list;watch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metal3clusters;metalstackclusters,verbs=get;list;watch
 
 func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
 	gkc := unstructured.Unstructured{}
