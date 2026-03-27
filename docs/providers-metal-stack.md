@@ -234,7 +234,7 @@ spec:
 ## Technical considerations
 
 The `KamajiControlPlane` requires a valid service address (`spec.network.serviceAddress`) and an external load balancer configuration in the management cluster to be reachable by the worker nodes. Usually, a solution like MetalLB or Kube-VIP is deployed in the management cluster to expose the Kamaji Tenant API Servers.
-To maintain a correct flow for Cluster API, you have to know in advance the Kamaji Tenant Control Plane address, and port, to provide it to the `MetalStackCluster`.
+To maintain a correct flow for Cluster API, you have to know the Kamaji Tenant Control Plane address/port in advance, in order to provide it to the `MetalStackCluster`.
 
 In regard to the address, the following values must be the same:
 
@@ -251,11 +251,11 @@ Additionally, egress firewall rules on the `MetalStackFirewallTemplate` must be 
 2. The Konnectivity Server (`8132`) for control-plane to worker node tunnels.
 
 > [!NOTE]
-> For a _metal-stack_ deployment to become fully operational and to allow pods to be scheduled, a CNI (like Calico) and the [`metal-ccm`](https://github.com/metal-stack/metal-ccm) need to be deployed into the tenant cluster.
+> For a _metal-stack_ deployment to become fully operational and to allow pods to be scheduled, a CNI-Plugin (like Calico) and [`metal-ccm`](https://github.com/metal-stack/metal-ccm) need to be deployed into the tenant cluster.
 
 ## Development and Testing Environment
 
-The _metal-stack_ project provides a fully virtual container-lab based test environment called `capi-lab`, that makes it easy to explore this Kamaji integration locally. 
+The _metal-stack_ project provides a fully virtual containerlab-based test environment called `capi-lab`, that makes it easy to explore the Kamaji integration locally. 
 
 The `capi-lab` environment provides a `kamaji` flavor that runs:
 - **Kamaji** as the Control Plane provider on a Kind management cluster
