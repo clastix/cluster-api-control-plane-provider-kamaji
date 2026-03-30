@@ -106,7 +106,7 @@ type NetworkComponent struct {
 	// When set, the management address (serviceAddress or LoadBalancer IP) is used for CAPI
 	// cluster-cache, while this address is used for kubeadm ControlPlaneEndpoint and cluster-info.
 	// Both addresses are included in the API server certificate SANs.
-	AdvertiseAddress string `json:"advertiseAddress,omitempty"`
+	AdvertiseAddress   string            `json:"advertiseAddress,omitempty"`
 	ServiceLabels      map[string]string `json:"serviceLabels,omitempty"`
 	ServiceAnnotations map[string]string `json:"serviceAnnotations,omitempty"`
 	// Configure additional Subject Address Names for the kube-apiserver certificate,
