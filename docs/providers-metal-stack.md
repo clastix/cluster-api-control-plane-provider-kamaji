@@ -25,7 +25,7 @@ metadata:
   labels:
     cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
   name: '${CLUSTER_NAME}'
-  namespace: '${NAMESPACE}'
+  namespace: '${TENANT_NAMESPACE}'
 spec:
   controlPlaneRef:
     apiGroup: controlplane.cluster.x-k8s.io
@@ -47,7 +47,7 @@ kind: KamajiControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
 metadata:
   name: '${CLUSTER_NAME}'
-  namespace: '${CLUSTER_NAMESPACE}'
+  namespace: '${TENANT_NAMESPACE}'
 spec:
   apiServer: {}
   controllerManager:
@@ -73,7 +73,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: MetalStackCluster
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
+  namespace: ${TENANT_NAMESPACE}
 spec:
   projectID: ${METAL_PROJECT_ID}
   partition: ${METAL_PARTITION}
@@ -89,7 +89,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: MetalStackFirewallDeployment
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
+  namespace: ${TENANT_NAMESPACE}
 spec:
   autoUpdate:
     machineImage: true
@@ -100,7 +100,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: MetalStackFirewallTemplate
 metadata:
   name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
+  namespace: ${TENANT_NAMESPACE}
 spec:
   image: ${FIREWALL_MACHINE_IMAGE}
   size: ${FIREWALL_MACHINE_SIZE}
@@ -167,7 +167,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: MetalStackMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-worker
-  namespace: ${NAMESPACE}
+  namespace: ${TENANT_NAMESPACE}
 spec:
   template:
     spec:
@@ -229,6 +229,7 @@ spec:
               value: external
             - name: feature-gates
               value: "KubeletCrashLoopBackOffMax=true,KubeletEnsureSecretPulledImages=true"
+
 ```
 
 ## Technical considerations
