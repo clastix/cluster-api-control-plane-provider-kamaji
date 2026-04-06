@@ -14,4 +14,6 @@ var (
 	KamajiControlPlaneInitializedConditionType  KamajiControlPlaneConditionType = "KamajiControlPlaneIsInitialized"
 	KamajiControlPlaneReadyConditionType        KamajiControlPlaneConditionType = "KamajiControlPlaneIsReady"
 	KubeadmResourcesCreatedReadyConditionType   KamajiControlPlaneConditionType = "KubeadmResourcesCreated"
+	AvailableConditionType                      KamajiControlPlaneConditionType = "Available"
+	PausedConditionType                         KamajiControlPlaneConditionType = "Paused"
 )

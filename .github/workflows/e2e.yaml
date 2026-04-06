@@ -70,7 +70,7 @@ jobs:
 
       - name: "Install clusterctl and helm binaries"
         run: |
-          curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.8.4/clusterctl-linux-amd64 -o clusterctl
+          curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.12.4/clusterctl-linux-amd64 -o clusterctl
           sudo chmod +x clusterctl
           sudo mv clusterctl /usr/bin/clusterctl
           clusterctl version
@@ -100,9 +100,9 @@ jobs:
       - name: "Setup clusterctl config"
         run: |
           sed -i "s/docker.io\/clastix\/cluster-api-control-plane-provider-kamaji:.*/docker.io\/clastix\/cluster-api-control-plane-provider-kamaji:$GITHUB_SHA/g" config/control-plane-components.yaml
-          mkdir -p ${HOME}/control-plane-kamaji/v0.11.0/
-          cp config/control-plane-components.yaml ${HOME}/control-plane-kamaji/v0.11.0/
-          cp config/metadata.yaml ${HOME}/control-plane-kamaji/v0.11.0/
+          mkdir -p ${HOME}/control-plane-kamaji/v0.19.0/
+          cp config/control-plane-components.yaml ${HOME}/control-plane-kamaji/v0.19.0/
+          cp config/metadata.yaml ${HOME}/control-plane-kamaji/v0.19.0/
 
           mkdir ~/.cluster-api
           touch ~/.cluster-api/clusterctl.yaml
@@ -110,7 +110,7 @@ jobs:
           cat <<EOF > ~/.cluster-api/clusterctl.yaml
           providers:
           - name: "kamaji"
-            url: "${HOME}/control-plane-kamaji/v0.11.0/control-plane-components.yaml"
+            url: "${HOME}/control-plane-kamaji/v0.19.0/control-plane-components.yaml"
             type: "ControlPlaneProvider"
           EOF
 

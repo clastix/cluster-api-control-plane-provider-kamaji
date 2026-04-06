@@ -19,7 +19,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.16.4
   labels:
     cluster.x-k8s.io/provider: kamaji
-    cluster.x-k8s.io/v1beta1: v1alpha1
+    cluster.x-k8s.io/v1beta2: v1alpha1
   name: kamajicontrolplanes.controlplane.cluster.x-k8s.io
 spec:
   group: controlplane.cluster.x-k8s.io
@@ -41,7 +41,7 @@ spec:
       name: Version
       type: string
     - description: Check if the Kamaji Control Plane has been initialized
-      jsonPath: .status.initialized
+      jsonPath: .status.initialization.controlPlaneInitialized
       name: Initialized
       type: boolean
     - description: Check if the Kamaji Control Plane is up and running
@@ -591,18 +591,19 @@ spec:
                 type: object
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint propagates the endpoint the Kubernetes API Server managed by Kamaji is located.
+                minProperties: 1
                 properties:
                   host:
                     description: host is the hostname on which the API server is serving.
                     maxLength: 512
+                    minLength: 1
                     type: string
                   port:
                     description: port is the port on which the API server is serving.
                     format: int32
+                    maximum: 65535
+                    minimum: 1
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               controllerManager:
                 description: ControlPlaneComponent allows the customization for the given component of the control plane.
@@ -7446,6 +7447,10 @@ spec:
           status:
             description: KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
             properties:
+              availableReplicas:
+                description: Total number of available control plane instances targeted by this control plane.
+                format: int32
+                type: integer
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current state of this API Resource.
@@ -7513,8 +7518,17 @@ spec:
               failureReason:
                 description: Share the failed process of the KamajiControlPlane provider which wasn't able to complete the reconciliation for the given resource.
                 type: string
+              initialization:
+                description: Initialization contains the initialization status of the KamajiControlPlane.
+                properties:
+                  controlPlaneInitialized:
+                    description: ControlPlaneInitialized is true when the control plane provider reports the control plane has been initialized.
+                    type: boolean
+                type: object
               initialized:
-                description: The TenantControlPlane has completed initialization.
+                description: |-
+                  Deprecated: use Initialization.ControlPlaneInitialized instead.
+                  Kept for backward compatibility during v1beta1 → v1beta2 migration.
                 type: boolean
               ready:
                 description: The Kamaji Control Plane is ready to link Cluster API with the Tenant Control Plane.
@@ -7529,13 +7543,7 @@ spec:
                 type: integer
               selector:
                 type: string
-              unavailableReplicas:
-                description: |-
-                  Total number of unavailable TenantControlPlane instances targeted by this control plane,
-                  equal to the desired number of control plane instances - ready instances.
-                format: int32
-                type: integer
-              updatedReplicas:
+              upToDateReplicas:
                 description: Total number of non-terminated Pods targeted by this control plane that have the desired template spec.
                 format: int32
                 type: integer
@@ -7544,13 +7552,7 @@ spec:
                 type: string
             required:
             - externalManagedControlPlane
-            - initialized
             - ready
-            - readyReplicas
-            - replicas
-            - selector
-            - unavailableReplicas
-            - updatedReplicas
             - version
             type: object
         type: object
@@ -7570,7 +7572,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.16.4
   labels:
     cluster.x-k8s.io/provider: kamaji
-    cluster.x-k8s.io/v1beta1: v1alpha1
+    cluster.x-k8s.io/v1beta2: v1alpha1
   name: kamajicontrolplanetemplates.controlplane.cluster.x-k8s.io
 spec:
   group: controlplane.cluster.x-k8s.io
@@ -7618,6 +7620,7 @@ spec:
                     description: |-
                       Standard object's metadata.
                       More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+                    minProperties: 1
                     properties:
                       annotations:
                         additionalProperties:
@@ -15104,6 +15107,14 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - cluster.x-k8s.io

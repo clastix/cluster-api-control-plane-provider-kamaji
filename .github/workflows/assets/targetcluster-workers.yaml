@@ -32,7 +32,7 @@ spec:
                   image: quay.io/capk/ubuntu-2004-container-disk:v1.23.10
                 name: containervolume
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
 metadata:
   name: capi-quickstart-md-0
@@ -42,9 +42,9 @@ spec:
     spec:
       joinConfiguration:
         nodeRegistration:
-          kubeletExtraArgs: {}
+          criSocket: /var/run/containerd/containerd.sock
 ---
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
 metadata:
   name: capi-quickstart-md-0
@@ -58,14 +58,12 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: KubeadmConfigTemplate
           name: capi-quickstart-md-0
-          namespace: default
       clusterName: capi-quickstart
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: KubevirtMachineTemplate
         name: capi-quickstart-md-0
-        namespace: default
       version: v1.23.10

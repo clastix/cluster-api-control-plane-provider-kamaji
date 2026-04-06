@@ -8,7 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // ControlPlaneComponent allows the customization for the given component of the control plane.
@@ -136,7 +136,7 @@ type CoreDNSAddonSpec struct {
 type KamajiControlPlaneSpec struct {
 	KamajiControlPlaneFields `json:",inline"`
 	// ControlPlaneEndpoint propagates the endpoint the Kubernetes API Server managed by Kamaji is located.
-	ControlPlaneEndpoint capiv1beta1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+	ControlPlaneEndpoint capiv1beta2.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 	// Number of desired replicas for the given TenantControlPlane.
 	// Defaults to 2.
 	// +kubebuilder:default=2
@@ -229,23 +229,72 @@ type ExternalClusterReference struct {
 	DeploymentNamespace string `json:"deploymentNamespace"`
 }
 
+// KamajiControlPlaneInitializationStatus contains the initialization status of the KamajiControlPlane.
+type KamajiControlPlaneInitializationStatus struct {
+	// ControlPlaneInitialized is true when the control plane provider reports the control plane has been initialized.
+	// +optional
+	ControlPlaneInitialized *bool `json:"controlPlaneInitialized,omitempty"`
+}
+
+// GetControlPlaneInitialized returns the ControlPlaneInitialized field, nil-safe.
+func (s *KamajiControlPlaneInitializationStatus) GetControlPlaneInitialized() *bool {
+	if s == nil {
+		return nil
+	}
+
+	return s.ControlPlaneInitialized
+}
+
+// IsControlPlaneInitialized checks both the v1beta2 and deprecated v1beta1 initialization fields.
+func (s *KamajiControlPlaneStatus) IsControlPlaneInitialized() bool {
+	if s.Initialization != nil && s.Initialization.ControlPlaneInitialized != nil {
+		return *s.Initialization.ControlPlaneInitialized
+	}
+
+	if s.Initialized != nil {
+		return *s.Initialized
+	}
+
+	return false
+}
+
+// SetControlPlaneInitialized sets the ControlPlaneInitialized field, initializing the struct if needed.
+// Also sets the deprecated Initialized field for backward compatibility during v1beta1 → v1beta2 migration.
+func (s *KamajiControlPlaneStatus) SetControlPlaneInitialized(value bool) {
+	if s.Initialization == nil {
+		s.Initialization = &KamajiControlPlaneInitializationStatus{}
+	}
+
+	s.Initialization.ControlPlaneInitialized = &value
+	s.Initialized = &value
+}
+
 // KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
 type KamajiControlPlaneStatus struct {
-	// The TenantControlPlane has completed initialization.
-	Initialized bool `json:"initialized"`
+	// Initialization contains the initialization status of the KamajiControlPlane.
+	// +optional
+	Initialization *KamajiControlPlaneInitializationStatus `json:"initialization,omitempty"`
+	// Deprecated: use Initialization.ControlPlaneInitialized instead.
+	// Kept for backward compatibility during v1beta1 → v1beta2 migration.
+	// +optional
+	Initialized *bool `json:"initialized,omitempty"`
 	// The Kamaji Control Plane is ready to link Cluster API with the Tenant Control Plane.
 	Ready bool `json:"ready"`
 
 	// Total number of fully running and ready control plane instances.
-	ReadyReplicas int32 `json:"readyReplicas"`
+	// +optional
+	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
 	// Total number of non-terminated control plane instances.
-	Replicas int32  `json:"replicas"`
-	Selector string `json:"selector"`
-	// Total number of unavailable TenantControlPlane instances targeted by this control plane,
-	// equal to the desired number of control plane instances - ready instances.
-	UnavailableReplicas int32 `json:"unavailableReplicas"`
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty"`
+	// +optional
+	Selector *string `json:"selector,omitempty"`
+	// Total number of available control plane instances targeted by this control plane.
+	// +optional
+	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
 	// Total number of non-terminated Pods targeted by this control plane that have the desired template spec.
-	UpdatedReplicas int32 `json:"updatedReplicas"`
+	// +optional
+	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 	// ExternalManagedControlPlane indicates to Cluster API that the Control Plane
 	// is externally managed by Kamaji.
 	// +kubebuilder:default=true
@@ -264,7 +313,7 @@ type KamajiControlPlaneStatus struct {
 //+kubebuilder:resource:categories=cluster-api;kamaji,shortName=ktcp
 //+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 //+kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The desired Kubernetes version"
-//+kubebuilder:printcolumn:name="Initialized",type="boolean",JSONPath=".status.initialized",description="Check if the Kamaji Control Plane has been initialized"
+//+kubebuilder:printcolumn:name="Initialized",type="boolean",JSONPath=".status.initialization.controlPlaneInitialized",description="Check if the Kamaji Control Plane has been initialized"
 //+kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready",description="Check if the Kamaji Control Plane is up and running"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
 

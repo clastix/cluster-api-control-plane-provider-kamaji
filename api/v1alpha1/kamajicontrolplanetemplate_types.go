@@ -5,7 +5,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // KamajiControlPlaneTemplateSpec defines the desired state of KamajiControlPlaneTemplate.

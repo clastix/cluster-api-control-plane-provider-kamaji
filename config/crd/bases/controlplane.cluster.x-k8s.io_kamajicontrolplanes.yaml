@@ -25,7 +25,7 @@ spec:
       name: Version
       type: string
     - description: Check if the Kamaji Control Plane has been initialized
-      jsonPath: .status.initialized
+      jsonPath: .status.initialization.controlPlaneInitialized
       name: Initialized
       type: boolean
     - description: Check if the Kamaji Control Plane is up and running
@@ -608,18 +608,19 @@ spec:
               controlPlaneEndpoint:
                 description: ControlPlaneEndpoint propagates the endpoint the Kubernetes
                   API Server managed by Kamaji is located.
+                minProperties: 1
                 properties:
                   host:
                     description: host is the hostname on which the API server is serving.
                     maxLength: 512
+                    minLength: 1
                     type: string
                   port:
                     description: port is the port on which the API server is serving.
                     format: int32
+                    maximum: 65535
+                    minimum: 1
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               controllerManager:
                 description: ControlPlaneComponent allows the customization for the
@@ -7826,6 +7827,11 @@ spec:
           status:
             description: KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
             properties:
+              availableReplicas:
+                description: Total number of available control plane instances targeted
+                  by this control plane.
+                format: int32
+                type: integer
               conditions:
                 items:
                   description: Condition contains details for one aspect of the current
@@ -7895,8 +7901,19 @@ spec:
                 description: Share the failed process of the KamajiControlPlane provider
                   which wasn't able to complete the reconciliation for the given resource.
                 type: string
+              initialization:
+                description: Initialization contains the initialization status of
+                  the KamajiControlPlane.
+                properties:
+                  controlPlaneInitialized:
+                    description: ControlPlaneInitialized is true when the control
+                      plane provider reports the control plane has been initialized.
+                    type: boolean
+                type: object
               initialized:
-                description: The TenantControlPlane has completed initialization.
+                description: |-
+                  Deprecated: use Initialization.ControlPlaneInitialized instead.
+                  Kept for backward compatibility during v1beta1 → v1beta2 migration.
                 type: boolean
               ready:
                 description: The Kamaji Control Plane is ready to link Cluster API
@@ -7913,13 +7930,7 @@ spec:
                 type: integer
               selector:
                 type: string
-              unavailableReplicas:
-                description: |-
-                  Total number of unavailable TenantControlPlane instances targeted by this control plane,
-                  equal to the desired number of control plane instances - ready instances.
-                format: int32
-                type: integer
-              updatedReplicas:
+              upToDateReplicas:
                 description: Total number of non-terminated Pods targeted by this
                   control plane that have the desired template spec.
                 format: int32
@@ -7930,13 +7941,7 @@ spec:
                 type: string
             required:
             - externalManagedControlPlane
-            - initialized
             - ready
-            - readyReplicas
-            - replicas
-            - selector
-            - unavailableReplicas
-            - updatedReplicas
             - version
             type: object
         type: object
