@@ -73,7 +73,7 @@ spec:
   tenantID: 00000000-0000-0000-0000-000000000000
   type: ServicePrincipal
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: kamaji-quickstart-control-plane

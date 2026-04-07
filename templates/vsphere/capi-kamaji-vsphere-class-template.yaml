@@ -9,7 +9,7 @@ spec:
       # force the tenant control plane to have the same name as the cluster
       template: "{{ .cluster.name }}"
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+      apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
       kind: KamajiControlPlaneTemplate
       name: '${CLUSTER_CLASS_NAME}-kamaji-control-plane-template'
       namespace: '${CLUSTER_CLASS_NAMESPACE}'
@@ -37,7 +37,7 @@ spec:
             namespace: '${CLUSTER_CLASS_NAMESPACE}'
 ---
 kind: KamajiControlPlaneTemplate
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 metadata:
   name: '${CLUSTER_CLASS_NAME}-kamaji-control-plane-template'
   namespace: '${CLUSTER_CLASS_NAMESPACE}'

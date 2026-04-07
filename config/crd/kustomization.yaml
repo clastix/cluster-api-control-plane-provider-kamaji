@@ -26,4 +26,4 @@ configurations:
 # Adding the required labels for the Cluster API providers contracts.
 # https://cluster-api.sigs.k8s.io/developer/providers/contracts.html#api-version-labels
 commonLabels:
-  cluster.x-k8s.io/v1beta2: v1alpha1
+  cluster.x-k8s.io/v1beta2: v1alpha2

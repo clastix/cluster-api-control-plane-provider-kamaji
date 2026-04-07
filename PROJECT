@@ -18,14 +18,14 @@ resources:
   domain: cluster.x-k8s.io
   group: controlplane
   kind: KamajiControlPlane
-  path: github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1
-  version: v1alpha1
+  path: github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2
+  version: v1alpha2
 - api:
     crdVersion: v1
     namespaced: true
   domain: cluster.x-k8s.io
   group: controlplane
   kind: KamajiControlPlaneTemplate
-  path: github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1
-  version: v1alpha1
+  path: github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2
+  version: v1alpha2
 version: "3"

@@ -9,7 +9,7 @@ import (
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 )
 
 const (
@@ -24,7 +24,7 @@ func ParseKamajiControlPlaneUIDFromTenantControlPlane(tcp kamajiv1alpha1.TenantC
 	return strings.TrimPrefix(tcp.Name, RemoteTCPPrefix)
 }
 
-func GenerateRemoteTenantControlPlaneNames(kcp v1alpha1.KamajiControlPlane) (name string, namespace string) { //nolint:nonamedreturns
+func GenerateRemoteTenantControlPlaneNames(kcp v1alpha2.KamajiControlPlane) (name string, namespace string) { //nolint:nonamedreturns
 	return RemoteTCPPrefix + string(kcp.UID), kcp.Spec.Deployment.ExternalClusterReference.DeploymentNamespace
 }
 
@@ -38,7 +38,7 @@ func GenerateKeyNameFromSecret(secret *corev1.Secret) []string {
 	return names
 }
 
-func GenerateKeyNameFromKamaji(kcp *v1alpha1.KamajiControlPlane) string {
+func GenerateKeyNameFromKamaji(kcp *v1alpha2.KamajiControlPlane) string {
 	namespace := kcp.Namespace
 
 	if kcp.Spec.Deployment.ExternalClusterReference.KubeconfigSecretNamespace != "" {

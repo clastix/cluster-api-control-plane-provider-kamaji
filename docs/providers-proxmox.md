@@ -16,7 +16,7 @@ spec:
       cidrBlocks:
       - REDACTED/REDACTED
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
     kind: KamajiControlPlane
     name: proxmox-quickstart
   infrastructureRef:
@@ -24,7 +24,7 @@ spec:
     kind: ProxmoxCluster
     name: proxmox-quickstart
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: proxmox-quickstart

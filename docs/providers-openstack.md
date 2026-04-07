@@ -26,7 +26,7 @@ spec:
   clusterNetwork:
     serviceDomain: cluster.local
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
     kind: KamajiControlPlane
     name: kamaji-quickstart-control-plane
   infrastructureRef:
@@ -74,7 +74,7 @@ spec:
       protocol: "4"
       description: "Allow IP-in-IP among workers"
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: kamaji-quickstart-control-plane

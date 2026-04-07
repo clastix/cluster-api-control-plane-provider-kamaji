@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	controlplanev1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	controlplanev1alpha2 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/controllers"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
@@ -43,7 +43,7 @@ func init() {
 	utilruntime.Must(kamajiv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(capiv1beta2.AddToScheme(scheme))
 
-	utilruntime.Must(controlplanev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(controlplanev1alpha2.AddToScheme(scheme))
 }
 
 //nolint:funlen,cyclop

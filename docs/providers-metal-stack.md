@@ -44,7 +44,7 @@ spec:
     name: ${CLUSTER_NAME}
 ---
 kind: KamajiControlPlane
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 metadata:
   name: '${CLUSTER_NAME}'
   namespace: '${TENANT_NAMESPACE}'

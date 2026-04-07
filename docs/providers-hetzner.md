@@ -254,7 +254,7 @@ spec:
     hcloud:
       - name: prometherion@akephalos
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: workload-control-plane

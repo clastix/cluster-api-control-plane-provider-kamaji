@@ -11,7 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	ecr "github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
 )
@@ -30,7 +30,7 @@ var (
 )
 
 //nolint:cyclop
-func (r *KamajiControlPlaneReconciler) extractRemoteClient(ctx context.Context, kcp v1alpha1.KamajiControlPlane) (client.Client, error) { //nolint:ireturn
+func (r *KamajiControlPlaneReconciler) extractRemoteClient(ctx context.Context, kcp v1alpha2.KamajiControlPlane) (client.Client, error) { //nolint:ireturn
 	if !r.FeatureGates.Enabled(features.ExternalClusterReference) {
 		return nil, ErrExternalClusterReferenceNotEnabled
 	}

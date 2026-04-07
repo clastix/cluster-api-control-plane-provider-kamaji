@@ -47,7 +47,7 @@ spec:
     host: 0.0.0.0 # will be automatically patch by Kamaji controller
     port: 0 # will be automatically patch by Kamaji controller
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: kamaji-nutanix-127

@@ -11,19 +11,17 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/retry"
 	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	capicontract "sigs.k8s.io/cluster-api/util/contract"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 )
 
-func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alpha1.KamajiControlPlane, statusEndpoint string) (string, int64, error) {
+func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alpha2.KamajiControlPlane, statusEndpoint string) (string, int64, error) {
 	endpoint, strPort, err := net.SplitHostPort(statusEndpoint)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "cannot split the Kamaji endpoint host port pair")
@@ -57,7 +55,7 @@ func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alph
 	return endpoint, port, nil
 }
 
-func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
+func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha2.KamajiControlPlane, hostPort string) error {
 	endpoint, port, err := r.controlPlaneEndpoint(controlPlane, hostPort)
 	if err != nil {
 		return errors.Wrap(err, "cannot retrieve ControlPlaneEndpoint")
@@ -65,7 +63,7 @@ func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Con
 
 	if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if scopedErr := r.client.Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane); scopedErr != nil {
-			return errors.Wrap(scopedErr, "cannot retrieve *v1alpha1.KamajiControlPlane")
+			return errors.Wrap(scopedErr, "cannot retrieve *v1alpha2.KamajiControlPlane")
 		}
 
 		controlPlane.Spec.ControlPlaneEndpoint = capiv1beta2.APIEndpoint{
@@ -81,51 +79,18 @@ func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Con
 	return nil
 }
 
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
-
-// getInfraClusterFromRef resolves a ContractVersionedObjectReference to an unstructured object
-// by looking up the CRD metadata to discover the correct API version.
 func (r *KamajiControlPlaneReconciler) getInfraClusterFromRef(ctx context.Context, ref capiv1beta2.ContractVersionedObjectReference, namespace string) (*unstructured.Unstructured, error) {
 	if !ref.IsDefined() {
 		return nil, errors.New("object reference is not defined")
 	}
 
-	// Look up the CRD metadata to find the served API version
-	crdName := capicontract.CalculateCRDName(ref.APIGroup, ref.Kind)
-	crdMeta := &metav1.PartialObjectMetadata{}
-	crdMeta.SetName(crdName)
-	crdMeta.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "apiextensions.k8s.io",
-		Version: "v1",
-		Kind:    "CustomResourceDefinition",
-	})
-
-	if err := r.client.Get(ctx, client.ObjectKey{Name: crdName}, crdMeta); err != nil {
-		return nil, errors.Wrapf(err, "cannot get CRD metadata for %s", ref.Kind)
-	}
-
-	// Find the latest compatible API version from contract labels.
-	// CRDs are labeled like: cluster.x-k8s.io/v1beta2: v1beta2
-	// or: cluster.x-k8s.io/v1beta1: v1beta1_v1beta2
-	apiVersion := ""
-	for _, contractVersion := range []string{"v1beta2", "v1beta1"} {
-		labelKey := fmt.Sprintf("%s/%s", capiv1beta2.GroupVersion.Group, contractVersion)
-		if versions, ok := crdMeta.GetLabels()[labelKey]; ok && versions != "" {
-			// Pick the latest version from the underscore-separated list
-			parts := strings.Split(versions, "_")
-			apiVersion = parts[len(parts)-1]
-
-			break
-		}
-	}
-
-	if apiVersion == "" {
-		return nil, fmt.Errorf("no compatible API version found in CRD %s labels", crdName)
+	mapping, err := r.restMapper.RESTMapping(schema.GroupKind{Group: ref.APIGroup, Kind: ref.Kind})
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot resolve API version for %s.%s", ref.Kind, ref.APIGroup)
 	}
 
 	obj := &unstructured.Unstructured{}
-	obj.SetAPIVersion(schema.GroupVersion{Group: ref.APIGroup, Version: apiVersion}.String())
-	obj.SetKind(ref.Kind)
+	obj.SetGroupVersionKind(mapping.GroupVersionKind)
 	obj.SetName(ref.Name)
 	obj.SetNamespace(namespace)
 
@@ -137,7 +102,7 @@ func (r *KamajiControlPlaneReconciler) getInfraClusterFromRef(ctx context.Contex
 }
 
 //nolint:cyclop
-func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta2.Cluster, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
+func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta2.Cluster, controlPlane *v1alpha2.KamajiControlPlane, hostPort string) error {
 	if !cluster.Spec.InfrastructureRef.IsDefined() {
 		return errors.New("capiv1beta2.Cluster has no InfrastructureRef")
 	}

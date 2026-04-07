@@ -1,7 +1,7 @@
 // Copyright 2023 Clastix Labs
 // SPDX-License-Identifier: Apache-2.0
 
-package v1alpha1
+package v1alpha2
 
 import (
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
@@ -245,28 +245,22 @@ func (s *KamajiControlPlaneInitializationStatus) GetControlPlaneInitialized() *b
 	return s.ControlPlaneInitialized
 }
 
-// IsControlPlaneInitialized checks both the v1beta2 and deprecated v1beta1 initialization fields.
+// IsControlPlaneInitialized checks the v1beta2 initialization status.
 func (s *KamajiControlPlaneStatus) IsControlPlaneInitialized() bool {
 	if s.Initialization != nil && s.Initialization.ControlPlaneInitialized != nil {
 		return *s.Initialization.ControlPlaneInitialized
-	}
-
-	if s.Initialized != nil {
-		return *s.Initialized
 	}
 
 	return false
 }
 
 // SetControlPlaneInitialized sets the ControlPlaneInitialized field, initializing the struct if needed.
-// Also sets the deprecated Initialized field for backward compatibility during v1beta1 → v1beta2 migration.
 func (s *KamajiControlPlaneStatus) SetControlPlaneInitialized(value bool) {
 	if s.Initialization == nil {
 		s.Initialization = &KamajiControlPlaneInitializationStatus{}
 	}
 
 	s.Initialization.ControlPlaneInitialized = &value
-	s.Initialized = &value
 }
 
 // KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
@@ -274,10 +268,6 @@ type KamajiControlPlaneStatus struct {
 	// Initialization contains the initialization status of the KamajiControlPlane.
 	// +optional
 	Initialization *KamajiControlPlaneInitializationStatus `json:"initialization,omitempty"`
-	// Deprecated: use Initialization.ControlPlaneInitialized instead.
-	// Kept for backward compatibility during v1beta1 → v1beta2 migration.
-	// +optional
-	Initialized *bool `json:"initialized,omitempty"`
 	// The Kamaji Control Plane is ready to link Cluster API with the Tenant Control Plane.
 	Ready bool `json:"ready"`
 

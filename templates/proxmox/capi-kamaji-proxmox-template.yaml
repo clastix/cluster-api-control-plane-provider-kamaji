@@ -7,7 +7,7 @@ metadata:
     cluster.x-k8s.io/cluster-name: '${CLUSTER_NAME}'
 spec:
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
     kind: KamajiControlPlane
     name: '${CLUSTER_NAME}'
   infrastructureRef:
@@ -15,7 +15,7 @@ spec:
     kind: ProxmoxCluster
     name: '${CLUSTER_NAME}'
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   labels:

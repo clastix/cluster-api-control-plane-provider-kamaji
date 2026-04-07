@@ -17,14 +17,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 )
 
 var ErrEnqueueBack = errors.New("enqueue back")
 
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
-func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta2.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta2.Cluster, kcp v1alpha2.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	log := ctrllog.FromContext(ctx)
 	// Creating a kubeconfig secret for the workload cluster.
 	if secretName := tcp.Status.KubeConfig.Admin.SecretName; len(secretName) == 0 {
@@ -64,7 +64,7 @@ func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Conte
 // also in regard to the naming conventions according to the Cluster API contracts about Kubeconfig.
 //
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
-func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, reader client.Client, cluster capiv1beta2.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx context.Context, reader client.Client, cluster capiv1beta2.Cluster, kcp v1alpha2.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiCA := &corev1.Secret{}
 	capiCA.Name = cluster.Name + "-ca"
 	capiCA.Namespace = cluster.Namespace
@@ -129,7 +129,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateCertificateAuthority(ctx co
 // also in regard to the naming conventions according to the Cluster API contracts about kubeconfig.
 //
 // more info: https://cluster-api.sigs.k8s.io/developer/architecture/controllers/cluster.html#secrets
-func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, reader client.Client, cluster capiv1beta2.Cluster, kcp v1alpha1.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
+func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Context, reader client.Client, cluster capiv1beta2.Cluster, kcp v1alpha2.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
 	capiAdminKubeconfig := &corev1.Secret{}
 	capiAdminKubeconfig.Name = cluster.Name + "-kubeconfig"
 	capiAdminKubeconfig.Namespace = cluster.Namespace

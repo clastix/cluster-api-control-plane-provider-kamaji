@@ -50,7 +50,7 @@ spec:
   server: REDACTED # VSPHERE_SERVER
   thumbprint: REDACTED # VSPHERE_TLS_THUMBPRINT
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: kamaji-vsphere-125

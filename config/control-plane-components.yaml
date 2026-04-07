@@ -19,7 +19,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.16.4
   labels:
     cluster.x-k8s.io/provider: kamaji
-    cluster.x-k8s.io/v1beta2: v1alpha1
+    cluster.x-k8s.io/v1beta2: v1alpha2
   name: kamajicontrolplanes.controlplane.cluster.x-k8s.io
 spec:
   group: controlplane.cluster.x-k8s.io
@@ -52,7 +52,7 @@ spec:
       jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1alpha1
+    name: v1alpha2
     schema:
       openAPIV3Schema:
         description: KamajiControlPlane is the Schema for the kamajicontrolplanes API.
@@ -7525,11 +7525,6 @@ spec:
                     description: ControlPlaneInitialized is true when the control plane provider reports the control plane has been initialized.
                     type: boolean
                 type: object
-              initialized:
-                description: |-
-                  Deprecated: use Initialization.ControlPlaneInitialized instead.
-                  Kept for backward compatibility during v1beta1 → v1beta2 migration.
-                type: boolean
               ready:
                 description: The Kamaji Control Plane is ready to link Cluster API with the Tenant Control Plane.
                 type: boolean
@@ -7572,7 +7567,7 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.16.4
   labels:
     cluster.x-k8s.io/provider: kamaji
-    cluster.x-k8s.io/v1beta2: v1alpha1
+    cluster.x-k8s.io/v1beta2: v1alpha2
   name: kamajicontrolplanetemplates.controlplane.cluster.x-k8s.io
 spec:
   group: controlplane.cluster.x-k8s.io
@@ -7588,7 +7583,7 @@ spec:
     singular: kamajicontrolplanetemplate
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     schema:
       openAPIV3Schema:
         description: KamajiControlPlaneTemplate is the Schema for the kamajicontrolplanetemplates API.
@@ -15107,14 +15102,6 @@ rules:
   - list
   - patch
   - update
-  - watch
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - get
-  - list
   - watch
 - apiGroups:
   - cluster.x-k8s.io

@@ -36,7 +36,7 @@ spec:
       jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1alpha1
+    name: v1alpha2
     schema:
       openAPIV3Schema:
         description: KamajiControlPlane is the Schema for the kamajicontrolplanes
@@ -7910,11 +7910,6 @@ spec:
                       plane provider reports the control plane has been initialized.
                     type: boolean
                 type: object
-              initialized:
-                description: |-
-                  Deprecated: use Initialization.ControlPlaneInitialized instead.
-                  Kept for backward compatibility during v1beta1 → v1beta2 migration.
-                type: boolean
               ready:
                 description: The Kamaji Control Plane is ready to link Cluster API
                   with the Tenant Control Plane.
