@@ -80,6 +80,7 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - metal3clusters
+  - metalstackclusters
   verbs:
   - get
   - list
