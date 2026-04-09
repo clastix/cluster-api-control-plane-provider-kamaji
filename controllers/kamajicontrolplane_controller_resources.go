@@ -156,6 +156,9 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateKubeconfig(ctx context.Cont
 			labels["kamaji.clastix.io/tcp"] = tcp.Name
 
 			secretKey := "admin.conf"
+			if kcp.Spec.Network.AdvertiseAddress != "" {
+				secretKey = "admin.svc"
+			}
 			if v, ok := kcp.GetAnnotations()[kamajiv1alpha1.KubeconfigSecretKeyAnnotation]; ok && v != "" {
 				secretKey = v
 			}
