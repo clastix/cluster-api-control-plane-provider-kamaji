@@ -20,8 +20,6 @@ import (
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 )
 
-var ErrEnqueueBack = errors.New("enqueue back")
-
 //+kubebuilder:rbac:groups="",resources="secrets",verbs=get;list;watch;create;update;patch
 
 func (r *KamajiControlPlaneReconciler) createRequiredResources(ctx context.Context, remoteClient client.Client, cluster capiv1beta2.Cluster, kcp v1alpha2.KamajiControlPlane, tcp *kamajiv1alpha1.TenantControlPlane) error {
