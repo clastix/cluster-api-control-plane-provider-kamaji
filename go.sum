@@ -26,8 +26,8 @@ github.com/clastix/kamaji v1.0.1-0.20260330073609-e51909fae3f5 h1:qLni1zFHNsbb6X
 github.com/clastix/kamaji v1.0.1-0.20260330073609-e51909fae3f5/go.mod h1:uZ4hYdfQ3eJJ0p08DVVhOY8N/FDFQkpj1altbJDsE9c=
 github.com/coredns/caddy v1.1.1 h1:2eYKZT7i6yxIfGP3qLJoJ7HAsDJqYB+X68g4NYjSrE0=
 github.com/coredns/caddy v1.1.1/go.mod h1:A6ntJQlAWuQfFlsd9hvigKbo2WS0VUs2l1e2F+BawD4=
-github.com/coredns/corefile-migration v1.0.30 h1:ljZNPGgna+4yKv81gfkvkgLEWdtz0NjBR1glaiPI140=
-github.com/coredns/corefile-migration v1.0.30/go.mod h1:56DPqONc3njpVPsdilEnfijCwNGC3/kTJLl7i7SPavY=
+github.com/coredns/corefile-migration v1.0.31 h1:f7WGhY8M2Jn8P2dVO0p7wSQ1QKsMARl6WEyUjCb/V38=
+github.com/coredns/corefile-migration v1.0.31/go.mod h1:56DPqONc3njpVPsdilEnfijCwNGC3/kTJLl7i7SPavY=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -277,8 +277,8 @@ k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 h1:AZYQSJemyQB5eRxqcPky+/7EdBj0x
 k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2/go.mod h1:xDxuJ0whA3d0I4mf/C4ppKHxXynQ+fxnkmQH0vTHnuk=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 h1:jpcvIRr3GLoUoEKRkHKSmGjxb6lWwrBlJsXc+eUYQHM=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2/go.mod h1:Ve9uj1L+deCXFrPOk1LpFXqTg7LCFzFso6PA48q/XZw=
-sigs.k8s.io/cluster-api v1.12.4 h1:usvoZ+Nblfu//l31hm1B1WUdigb6OnGAJqwt8qWq/iA=
-sigs.k8s.io/cluster-api v1.12.4/go.mod h1:ePDeVCVaW6SGxRgDeLt5+KK4TigEnF0LPV6ztEzRzlI=
+sigs.k8s.io/cluster-api v1.12.5 h1:kPfz096EpFuPz0lRurJvhSIzUgDfdbHzP68wOrZPb/M=
+sigs.k8s.io/cluster-api v1.12.5/go.mod h1:RdmTGGRMvAGIIQBljHUHNov/6Lgz7rmYXqzZNCK+Z4o=
 sigs.k8s.io/controller-runtime v0.23.3 h1:VjB/vhoPoA9l1kEKZHBMnQF33tdCLQKJtydy4iqwZ80=
 sigs.k8s.io/controller-runtime v0.23.3/go.mod h1:B6COOxKptp+YaUT5q4l6LqUJTRpizbgf9KSRNdQGns0=
 sigs.k8s.io/gateway-api v1.5.1 h1:RqVRIlkhLhUO8wOHKTLnTJA6o/1un4po4/6M1nRzdd0=
