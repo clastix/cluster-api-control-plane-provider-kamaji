@@ -5,16 +5,15 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
-	goerrors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
@@ -64,7 +63,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Retrieving the KamajiControlPlane instance from the request
 	kcp := kcpv1alpha2.KamajiControlPlane{}
 	if err = r.client.Get(ctx, req.NamespacedName, &kcp); err != nil {
-		if errors.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			log.Info("resource may have been deleted")
 
 			return ctrl.Result{}, nil
@@ -87,8 +86,8 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	cluster.SetName(kcp.GetOwnerReferences()[0].Name)
 	cluster.SetNamespace(kcp.GetNamespace())
 
-	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
-		if errors.IsNotFound(err) {
+	if err = r.client.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster); err != nil {
+		if k8serrors.IsNotFound(err) {
 			log.Info("capiv1beta2.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
@@ -185,7 +184,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Managed Kubernetes Service, although running as a regular pod.
 	TrackConditionType(&conditions, kcpv1alpha2.TenantControlPlaneAddressReadyConditionType, kcp.Generation, func() error {
 		if len(tcp.Status.ControlPlaneEndpoint) == 0 {
-			err = goerrors.New("Control Plane Endpoint is not yet available since unprocessed by Kamaji")
+			err = ErrUnprocessedControlPlaneEndpoint
 		}
 
 		return err
@@ -215,8 +214,8 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	// We need to fetch the updated cluster resource here because otherwise the cluster.spec.controlPlaneEndpoint.Host
 	// check that happens latter will never succeed.
-	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
-		if errors.IsNotFound(err) {
+	if err = r.client.Get(ctx, client.ObjectKeyFromObject(&cluster), &cluster); err != nil {
+		if k8serrors.IsNotFound(err) {
 			log.Info("capiv1beta2.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
@@ -326,7 +325,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	})
 
 	if err != nil {
-		if goerrors.Is(err, ErrEnqueueBack) {
+		if errors.Is(err, ErrEnqueueBack) {
 			log.Info(err.Error())
 
 			return ctrl.Result{RequeueAfter: time.Second}, nil
@@ -367,7 +366,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	meta.RemoveStatusCondition(&conditions, string(kcpv1alpha2.PausedConditionType))
 
 	if err != nil {
-		if goerrors.Is(err, ErrEnqueueBack) {
+		if errors.Is(err, ErrEnqueueBack) {
 			log.Info(err.Error())
 
 			return ctrl.Result{RequeueAfter: time.Second}, nil
@@ -385,7 +384,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx context.Context, kcp *kcpv1alpha2.KamajiControlPlane, modifierFn func()) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if err := r.client.Get(ctx, types.NamespacedName{Name: kcp.Name, Namespace: kcp.Namespace}, kcp); err != nil {
+		if err := r.client.Get(ctx, client.ObjectKeyFromObject(kcp), kcp); err != nil {
 			return err //nolint:wrapcheck
 		}
 
@@ -394,7 +393,7 @@ func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx contex
 		return r.client.Status().Update(ctx, kcp)
 	})
 	if err != nil {
-		return goerrors.Wrap(err, "cannot update KamajiControlPlane resource")
+		return fmt.Errorf("%w: %s", ErrUpdate, err.Error())
 	}
 
 	return nil
@@ -415,7 +414,7 @@ func (r *KamajiControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr
 
 	cs, csErr := kubernetes.NewForConfig(mgr.GetConfig())
 	if csErr != nil {
-		return goerrors.Wrap(csErr, "cannot create Kubernetes Client-set")
+		return fmt.Errorf("%w: %s", ErrClientSetCreation, csErr.Error())
 	}
 
 	if _, rsErr := cs.Discovery().ServerResourcesForGroupVersion(kamajiv1alpha1.GroupVersion.String()); rsErr == nil {
