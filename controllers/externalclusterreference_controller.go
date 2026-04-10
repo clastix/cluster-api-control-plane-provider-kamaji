@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/indexers"
 )
@@ -53,7 +53,7 @@ func (r *ExternalClusterReferenceReconciler) Reconcile(ctx context.Context, req 
 	var keys []string
 
 	for _, key := range externalclusterreference.GenerateKeyNameFromSecret(&secret) {
-		var kcpList v1alpha1.KamajiControlPlaneList
+		var kcpList v1alpha2.KamajiControlPlaneList
 
 		if err := r.Client.List(ctx, &kcpList, client.MatchingFields{indexers.ExternalClusterReferenceKamajiControlPlaneField: key}); err != nil {
 			log.Error(err, "unable to use indexer", "key", key)
@@ -135,8 +135,8 @@ func (r *ExternalClusterReferenceReconciler) SetupWithManager(mgr ctrl.Manager) 
 	//nolint:wrapcheck
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Secret{}).
-		Watches(&v1alpha1.KamajiControlPlane{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, object client.Object) []reconcile.Request {
-			kcp := object.(*v1alpha1.KamajiControlPlane) //nolint:forcetypeassert
+		Watches(&v1alpha2.KamajiControlPlane{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, object client.Object) []reconcile.Request {
+			kcp := object.(*v1alpha2.KamajiControlPlane) //nolint:forcetypeassert
 			if kcp.Spec.Deployment.ExternalClusterReference == nil {
 				return nil
 			}
@@ -157,7 +157,7 @@ func (r *ExternalClusterReferenceReconciler) SetupWithManager(mgr ctrl.Manager) 
 		Complete(r)
 }
 
-func (r *ExternalClusterReferenceReconciler) getSecretFromKamajiControlPlaneReferences(ctx context.Context, kcp *v1alpha1.KamajiControlPlane) []corev1.Secret {
+func (r *ExternalClusterReferenceReconciler) getSecretFromKamajiControlPlaneReferences(ctx context.Context, kcp *v1alpha2.KamajiControlPlane) []corev1.Secret {
 	var secretList corev1.SecretList
 
 	val := externalclusterreference.GenerateKeyNameFromKamaji(kcp)
@@ -191,7 +191,7 @@ func (p *PushKamajiChange) Reconcile(ctx context.Context, request reconcile.Requ
 		return reconcile.Result{}, nil
 	}
 
-	var kcpList v1alpha1.KamajiControlPlaneList
+	var kcpList v1alpha2.KamajiControlPlaneList
 
 	if err := p.ParentClient.List(ctx, &kcpList, client.MatchingFields{indexers.KamajiControlPlaneUIDField: value}); err != nil {
 		return reconcile.Result{}, err //nolint:wrapcheck
@@ -199,7 +199,7 @@ func (p *PushKamajiChange) Reconcile(ctx context.Context, request reconcile.Requ
 
 	for _, kcp := range kcpList.Items {
 		p.TriggerChannel <- event.GenericEvent{
-			Object: &v1alpha1.KamajiControlPlane{
+			Object: &v1alpha2.KamajiControlPlane{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      kcp.Name,
 					Namespace: kcp.Namespace,

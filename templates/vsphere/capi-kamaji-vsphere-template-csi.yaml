@@ -41,7 +41,7 @@ stringData:
   username: '${VSPHERE_USERNAME}'
 ---
 kind: KamajiControlPlane
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 metadata:
   name: '${CLUSTER_NAME}'
   namespace: '${CLUSTER_NAMESPACE}'

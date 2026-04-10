@@ -29,7 +29,7 @@ spec:
         - 192.168.0.0/16
   controlPlaneRef:
     kind: KamajiControlPlane
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
     name: kamaji-quickstart
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
@@ -57,7 +57,7 @@ spec:
     name: kamaji-quickstart-credentials
 ---
 kind: KamajiControlPlane
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 metadata:
   name: kamaji-quickstart
   labels:

@@ -12,13 +12,15 @@ import (
 	goerrors "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/component-base/featuregate"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
+	"k8s.io/utils/ptr"
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	kcpv1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	kcpv1alpha2 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
 )
@@ -43,7 +45,8 @@ type KamajiControlPlaneReconciler struct {
 	MaxConcurrentReconciles       int
 	DynamicInfrastructureClusters sets.Set[string]
 
-	client client.Client
+	client     client.Client
+	restMapper meta.RESTMapper
 }
 
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kamajicontrolplanes,verbs=get;list;watch;create;update;patch;delete
@@ -59,7 +62,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	log.Info("reconciliation started")
 
 	// Retrieving the KamajiControlPlane instance from the request
-	kcp := kcpv1alpha1.KamajiControlPlane{}
+	kcp := kcpv1alpha2.KamajiControlPlane{}
 	if err = r.client.Get(ctx, req.NamespacedName, &kcp); err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("resource may have been deleted")
@@ -67,7 +70,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{}, nil
 		}
 
-		log.Error(err, "unable to get kcpv1alpha1.KamajiControlPlane")
+		log.Error(err, "unable to get kcpv1alpha2.KamajiControlPlane")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
@@ -80,25 +83,40 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	}
 
 	// Retrieving the Cluster information
-	cluster := capiv1beta1.Cluster{}
+	cluster := capiv1beta2.Cluster{}
 	cluster.SetName(kcp.GetOwnerReferences()[0].Name)
 	cluster.SetNamespace(kcp.GetNamespace())
 
 	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("capiv1beta1.Cluster resource may have been deleted, withdrawing reconciliation")
+			log.Info("capiv1beta2.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
 		}
 
-		log.Error(err, "unable to get capiv1beta1.Cluster")
+		log.Error(err, "unable to get capiv1beta2.Cluster")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
 
 	// Return early if the object or Cluster is paused.
-	if cluster.Spec.Paused || annotations.HasPaused(&kcp) {
+	if annotations.IsPaused(&cluster, &kcp) {
 		log.Info("Reconciliation is paused for this object")
+
+		conditions := kcp.Status.Conditions
+
+		meta.SetStatusCondition(&conditions, metav1.Condition{
+			Type:               string(kcpv1alpha2.PausedConditionType),
+			Status:             metav1.ConditionTrue,
+			Reason:             "Paused",
+			ObservedGeneration: kcp.Generation,
+		})
+
+		if updateErr := r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
+			kcp.Status.Conditions = conditions
+		}); updateErr != nil {
+			log.Error(updateErr, "unable to update Paused condition")
+		}
 
 		return ctrl.Result{}, nil
 	}
@@ -118,7 +136,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		})
 
 		if deferErr != nil {
-			log.Error(err, "unable to update kcpv1alpha1.KamajiControlPlane conditions")
+			log.Error(err, "unable to update kcpv1alpha2.KamajiControlPlane conditions")
 		}
 	}()
 	// When ExternalClusterReference feature is enabled, we need to interact with a different API endpoint
@@ -127,7 +145,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	var remoteClient client.Client
 
 	if kcp.Spec.Deployment.ExternalClusterReference != nil {
-		TrackConditionType(&conditions, kcpv1alpha1.FoundExternalClusterReferenceConditionType, kcp.Generation, func() error {
+		TrackConditionType(&conditions, kcpv1alpha2.FoundExternalClusterReferenceConditionType, kcp.Generation, func() error {
 			remoteClient, err = r.extractRemoteClient(ctx, kcp)
 
 			return err
@@ -148,7 +166,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Reconciling the Kamaji TenantControlPlane resource
 	var tcp *kamajiv1alpha1.TenantControlPlane
 
-	TrackConditionType(&conditions, kcpv1alpha1.TenantControlPlaneCreatedConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.TenantControlPlaneCreatedConditionType, kcp.Generation, func() error {
 		tcp, err = r.createOrUpdateTenantControlPlane(ctx, remoteClient, cluster, kcp)
 
 		return err
@@ -165,7 +183,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Due to the given for granted concept that Control Plane and Worker nodes are on the same infrastructure,
 	// we have to change the approach and wait for the advertised Control Plane endpoint, since Kamaji is offering a
 	// Managed Kubernetes Service, although running as a regular pod.
-	TrackConditionType(&conditions, kcpv1alpha1.TenantControlPlaneAddressReadyConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.TenantControlPlaneAddressReadyConditionType, kcp.Generation, func() error {
 		if len(tcp.Status.ControlPlaneEndpoint) == 0 {
 			err = goerrors.New("Control Plane Endpoint is not yet available since unprocessed by Kamaji")
 		}
@@ -183,14 +201,14 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Starting from CAPI v1.8, the ControlPlane provider can set the Control Plane endpoint:
 	// this will make useless the patchCluster function in the future.
 	// More info: https://release-1-8.cluster-api.sigs.k8s.io/developer/providers/control-plane#optional-spec-fields-for-implementations-providing-endpoints
-	TrackConditionType(&conditions, kcpv1alpha1.ControlPlaneEndpointPatchedConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.ControlPlaneEndpointPatchedConditionType, kcp.Generation, func() error {
 		err = r.patchControlPlaneEndpoint(ctx, &kcp, tcp.Status.ControlPlaneEndpoint)
 
 		return err
 	})
 
 	if err != nil {
-		log.Error(err, "cannot patch kcpv1alpha1.KamajiControlPlane")
+		log.Error(err, "cannot patch kcpv1alpha2.KamajiControlPlane")
 
 		return ctrl.Result{}, err
 	}
@@ -199,12 +217,12 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// check that happens latter will never succeed.
 	if err = r.client.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, &cluster); err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("capiv1beta1.Cluster resource may have been deleted, withdrawing reconciliation")
+			log.Info("capiv1beta2.Cluster resource may have been deleted, withdrawing reconciliation")
 
 			return ctrl.Result{}, nil
 		}
 
-		log.Error(err, "unable to get capiv1beta1.Cluster")
+		log.Error(err, "unable to get capiv1beta2.Cluster")
 
 		return ctrl.Result{}, err //nolint:wrapcheck
 	}
@@ -214,14 +232,14 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if !r.FeatureGates.Enabled(features.SkipInfraClusterPatch) {
 		// Patching the Infrastructure Cluster:
 		// this will be removed on the upcoming Kamaji Control Plane versions.
-		TrackConditionType(&conditions, kcpv1alpha1.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
+		TrackConditionType(&conditions, kcpv1alpha2.InfrastructureClusterPatchedConditionType, kcp.Generation, func() error {
 			err = r.patchCluster(ctx, cluster, &kcp, tcp.Status.ControlPlaneEndpoint)
 
 			return err
 		})
 
 		if err != nil {
-			log.Error(err, "cannot patch capiv1beta1.Cluster")
+			log.Error(err, "cannot patch capiv1beta2.Cluster")
 
 			return ctrl.Result{}, err
 		}
@@ -231,13 +249,13 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// 1. an assigned Control Plane endpoint
 	// 2. a ready infrastructure
 	if len(cluster.Spec.ControlPlaneEndpoint.Host) == 0 {
-		log.Info("capiv1beta1.Cluster Control Plane endpoint still unprocessed, enqueuing back")
+		log.Info("capiv1beta2.Cluster Control Plane endpoint still unprocessed, enqueuing back")
 
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
-	if !cluster.Status.InfrastructureReady {
-		log.Info("capiv1beta1.Cluster infrastructure is not yet ready, enqueuing back")
+	if !ptr.Deref(cluster.Status.Initialization.InfrastructureProvisioned, false) {
+		log.Info("capiv1beta2.Cluster infrastructure is not yet provisioned, enqueuing back")
 
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
@@ -248,37 +266,37 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
-	if *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady && !kcp.Status.Initialized {
+	if *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady && !kcp.Status.IsControlPlaneInitialized() {
 		// TenantControlPlane has been initialized
-		TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
+		TrackConditionType(&conditions, kcpv1alpha2.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
 			err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
-				kcp.Status.Initialized = true
+				kcp.Status.SetControlPlaneInitialized(true)
 			})
 
 			return err
 		})
 
 		if err != nil {
-			log.Error(err, "unable to set kcpv1alpha1.KamajiControlPlane as initialized")
+			log.Error(err, "unable to set kcpv1alpha2.KamajiControlPlane as initialized")
 
 			return ctrl.Result{}, err
 		}
 	}
 
-	if !kcp.Status.Initialized {
-		log.Info("kcpv1alpha1.KamajiControlPlane is not yet initialized, enqueuing back")
+	if !kcp.Status.IsControlPlaneInitialized() {
+		log.Info("kcpv1alpha2.KamajiControlPlane is not yet initialized, enqueuing back")
 
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// Updating KamajiControlPlane ready status, along with scaling values
-	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
-			kcp.Status.ReadyReplicas = tcp.Status.Kubernetes.Deployment.ReadyReplicas
-			kcp.Status.Replicas = tcp.Status.Kubernetes.Deployment.Replicas
-			kcp.Status.Selector = metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: kcp.GetLabels()})
-			kcp.Status.UnavailableReplicas = tcp.Status.Kubernetes.Deployment.UnavailableReplicas
-			kcp.Status.UpdatedReplicas = tcp.Status.Kubernetes.Deployment.UpdatedReplicas
+			kcp.Status.ReadyReplicas = ptr.To(tcp.Status.Kubernetes.Deployment.ReadyReplicas)
+			kcp.Status.Replicas = ptr.To(tcp.Status.Kubernetes.Deployment.Replicas)
+			kcp.Status.Selector = ptr.To(metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: kcp.GetLabels()}))
+			kcp.Status.AvailableReplicas = ptr.To(tcp.Status.Kubernetes.Deployment.AvailableReplicas)
+			kcp.Status.UpToDateReplicas = ptr.To(tcp.Status.Kubernetes.Deployment.UpdatedReplicas)
 			kcp.Status.Version = tcp.Status.Kubernetes.Version.Version
 		})
 
@@ -286,14 +304,14 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	})
 
 	if err != nil {
-		log.Error(err, "unable to report kcpv1alpha1.KamajiControlPlane status")
+		log.Error(err, "unable to report kcpv1alpha2.KamajiControlPlane status")
 
 		return ctrl.Result{}, err
 	}
 	// KamajiControlPlane must be considered ready before replicating required resources
-	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.KamajiControlPlaneInitializedConditionType, kcp.Generation, func() error {
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
-			kcp.Status.Initialized = true
+			kcp.Status.SetControlPlaneInitialized(true)
 		})
 
 		return err
@@ -301,7 +319,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	var result ctrl.Result
 
-	TrackConditionType(&conditions, kcpv1alpha1.KubeadmResourcesCreatedReadyConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.KubeadmResourcesCreatedReadyConditionType, kcp.Generation, func() error {
 		err = r.createRequiredResources(ctx, remoteClient, cluster, kcp, tcp)
 
 		return err
@@ -319,7 +337,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return ctrl.Result{}, err
 	}
 
-	TrackConditionType(&conditions, kcpv1alpha1.KamajiControlPlaneReadyConditionType, kcp.Generation, func() error {
+	TrackConditionType(&conditions, kcpv1alpha2.KamajiControlPlaneReadyConditionType, kcp.Generation, func() error {
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
 			kcp.Status.Ready = *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionReady || *tcp.Status.Kubernetes.Version.Status == kamajiv1alpha1.VersionUpgrading
 		})
@@ -334,6 +352,20 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return nil
 	})
 
+	availableStatus, availableReason := metav1.ConditionFalse, "NotAvailable"
+	if kcp.Status.Ready {
+		availableStatus, availableReason = metav1.ConditionTrue, "Available"
+	}
+
+	meta.SetStatusCondition(&conditions, metav1.Condition{
+		Type:               string(kcpv1alpha2.AvailableConditionType),
+		Status:             availableStatus,
+		Reason:             availableReason,
+		ObservedGeneration: kcp.Generation,
+	})
+
+	meta.RemoveStatusCondition(&conditions, string(kcpv1alpha2.PausedConditionType))
+
 	if err != nil {
 		if goerrors.Is(err, ErrEnqueueBack) {
 			log.Info(err.Error())
@@ -341,7 +373,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 			return ctrl.Result{RequeueAfter: time.Second}, nil
 		}
 
-		log.Error(err, "unable to report kcpv1alpha1.KamajiControlPlane readiness")
+		log.Error(err, "unable to report kcpv1alpha2.KamajiControlPlane readiness")
 
 		return ctrl.Result{}, err
 	}
@@ -351,7 +383,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	return result, nil
 }
 
-func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx context.Context, kcp *kcpv1alpha1.KamajiControlPlane, modifierFn func()) error {
+func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx context.Context, kcp *kcpv1alpha2.KamajiControlPlane, modifierFn func()) error {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if err := r.client.Get(ctx, types.NamespacedName{Name: kcp.Name, Namespace: kcp.Namespace}, kcp); err != nil {
 			return err //nolint:wrapcheck
@@ -371,8 +403,9 @@ func (r *KamajiControlPlaneReconciler) updateKamajiControlPlaneStatus(ctx contex
 // SetupWithManager sets up the controller with the Manager.
 func (r *KamajiControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, channel chan event.GenericEvent) error {
 	r.client = mgr.GetClient()
+	r.restMapper = mgr.GetRESTMapper()
 	ctrlBuilder := ctrl.NewControllerManagedBy(mgr).
-		For(&kcpv1alpha1.KamajiControlPlane{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
+		For(&kcpv1alpha2.KamajiControlPlane{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			return len(object.GetOwnerReferences()) > 0
 		}))).
 		Owns(&corev1.Secret{}).

@@ -7,7 +7,7 @@ metadata:
 spec:
   controlPlane:
     ref:
-      apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+      apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
       kind: KamajiControlPlaneTemplate
       name: ${CLUSTER_CLASS_NAME}-control-plane
       namespace: ${CLUSTER_CLASS_NAMESPACE}
@@ -55,7 +55,7 @@ spec:
     spec: {}
 ---
 kind: KamajiControlPlaneTemplate
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 metadata:
   name: ${CLUSTER_CLASS_NAME}-control-plane
   namespace: ${CLUSTER_CLASS_NAMESPACE}

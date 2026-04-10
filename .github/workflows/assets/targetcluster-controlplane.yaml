@@ -1,4 +1,4 @@
-apiVersion: cluster.x-k8s.io/v1beta1
+apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
   name: capi-quickstart
@@ -12,15 +12,13 @@ spec:
       cidrBlocks:
       - 10.10.0.0/16
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: KamajiControlPlane
     name: capi-quickstart-kubevirt
-    namespace: default
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: KubevirtCluster
     name: capi-quickstart
-    namespace: default
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtCluster
@@ -30,7 +28,7 @@ metadata:
   name: capi-quickstart
   namespace: default
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: capi-quickstart-kubevirt
@@ -38,7 +36,7 @@ metadata:
 spec:
   dataStoreName: default
   addons:
-    coreDNS: 
+    coreDNS:
       dnsServiceIPs:
         - 10.10.0.10
     kubeProxy: { }

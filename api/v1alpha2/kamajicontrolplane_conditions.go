@@ -1,7 +1,7 @@
 // Copyright 2023 Clastix Labs
 // SPDX-License-Identifier: Apache-2.0
 
-package v1alpha1
+package v1alpha2
 
 type KamajiControlPlaneConditionType string
 
@@ -14,4 +14,6 @@ var (
 	KamajiControlPlaneInitializedConditionType  KamajiControlPlaneConditionType = "KamajiControlPlaneIsInitialized"
 	KamajiControlPlaneReadyConditionType        KamajiControlPlaneConditionType = "KamajiControlPlaneIsReady"
 	KubeadmResourcesCreatedReadyConditionType   KamajiControlPlaneConditionType = "KubeadmResourcesCreated"
+	AvailableConditionType                      KamajiControlPlaneConditionType = "Available"
+	PausedConditionType                         KamajiControlPlaneConditionType = "Paused"
 )

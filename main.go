@@ -17,7 +17,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/component-base/featuregate"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/flags"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	controlplanev1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	controlplanev1alpha2 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/controllers"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/features"
@@ -41,9 +41,9 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(kamajiv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(capiv1beta1.AddToScheme(scheme))
+	utilruntime.Must(capiv1beta2.AddToScheme(scheme))
 
-	utilruntime.Must(controlplanev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(controlplanev1alpha2.AddToScheme(scheme))
 }
 
 //nolint:funlen,cyclop

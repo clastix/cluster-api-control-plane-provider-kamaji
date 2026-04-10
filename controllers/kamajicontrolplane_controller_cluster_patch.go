@@ -12,16 +12,16 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/util/retry"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
+	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 )
 
-func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alpha1.KamajiControlPlane, statusEndpoint string) (string, int64, error) {
+func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alpha2.KamajiControlPlane, statusEndpoint string) (string, int64, error) {
 	endpoint, strPort, err := net.SplitHostPort(statusEndpoint)
 	if err != nil {
 		return "", 0, errors.Wrap(err, "cannot split the Kamaji endpoint host port pair")
@@ -55,7 +55,7 @@ func (r *KamajiControlPlaneReconciler) controlPlaneEndpoint(controlPlane *v1alph
 	return endpoint, port, nil
 }
 
-func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
+func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Context, controlPlane *v1alpha2.KamajiControlPlane, hostPort string) error {
 	endpoint, port, err := r.controlPlaneEndpoint(controlPlane, hostPort)
 	if err != nil {
 		return errors.Wrap(err, "cannot retrieve ControlPlaneEndpoint")
@@ -63,10 +63,10 @@ func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Con
 
 	if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if scopedErr := r.client.Get(ctx, client.ObjectKeyFromObject(controlPlane), controlPlane); scopedErr != nil {
-			return errors.Wrap(scopedErr, "cannot retrieve *v1alpha1.KamajiControlPlane")
+			return errors.Wrap(scopedErr, "cannot retrieve *v1alpha2.KamajiControlPlane")
 		}
 
-		controlPlane.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
+		controlPlane.Spec.ControlPlaneEndpoint = capiv1beta2.APIEndpoint{
 			Host: endpoint,
 			Port: int32(port), //nolint:gosec
 		}
@@ -79,10 +79,32 @@ func (r *KamajiControlPlaneReconciler) patchControlPlaneEndpoint(ctx context.Con
 	return nil
 }
 
+func (r *KamajiControlPlaneReconciler) getInfraClusterFromRef(ctx context.Context, ref capiv1beta2.ContractVersionedObjectReference, namespace string) (*unstructured.Unstructured, error) {
+	if !ref.IsDefined() {
+		return nil, errors.New("object reference is not defined")
+	}
+
+	mapping, err := r.restMapper.RESTMapping(schema.GroupKind{Group: ref.APIGroup, Kind: ref.Kind})
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot resolve API version for %s.%s", ref.Kind, ref.APIGroup)
+	}
+
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(mapping.GroupVersionKind)
+	obj.SetName(ref.Name)
+	obj.SetNamespace(namespace)
+
+	if err := r.client.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
+		return nil, errors.Wrapf(err, "cannot retrieve %s %s/%s", ref.Kind, namespace, ref.Name)
+	}
+
+	return obj, nil
+}
+
 //nolint:cyclop
-func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta1.Cluster, controlPlane *v1alpha1.KamajiControlPlane, hostPort string) error {
-	if cluster.Spec.InfrastructureRef == nil {
-		return errors.New("capiv1beta1.Cluster has no InfrastructureRef")
+func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster capiv1beta2.Cluster, controlPlane *v1alpha2.KamajiControlPlane, hostPort string) error {
+	if !cluster.Spec.InfrastructureRef.IsDefined() {
+		return errors.New("capiv1beta2.Cluster has no InfrastructureRef")
 	}
 
 	endpoint, port, err := r.controlPlaneEndpoint(controlPlane, hostPort)
@@ -129,7 +151,7 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=proxmoxclusters;vsphereclusters;tinkerbellclusters,verbs=get;list;watch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=proxmoxclusters;vsphereclusters;tinkerbellclusters,verbs=patch
 
-func (r *KamajiControlPlaneReconciler) checkOrPatchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
+func (r *KamajiControlPlaneReconciler) checkOrPatchGenericCluster(ctx context.Context, cluster capiv1beta2.Cluster, endpoint string, port int64) error {
 	if err := r.checkGenericCluster(ctx, cluster, endpoint, port); err != nil {
 		if errors.As(err, &UnmanagedControlPlaneAddressError{}) {
 			return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
@@ -144,18 +166,13 @@ func (r *KamajiControlPlaneReconciler) checkOrPatchGenericCluster(ctx context.Co
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=awsclusters;azureclusters;hetznerclusters;kubevirtclusters;nutanixclusters;packetclusters;ionoscloudclusters,verbs=patch;get;list;watch
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=kubevirtclusters/status;nutanixclusters/status;packetclusters/status,verbs=patch
 
-func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64, patchStatus bool) error {
-	infraCluster := unstructured.Unstructured{}
-
-	infraCluster.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	infraCluster.SetName(cluster.Spec.InfrastructureRef.Name)
-	infraCluster.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
-
-	if err := r.client.Get(ctx, types.NamespacedName{Name: infraCluster.GetName(), Namespace: infraCluster.GetNamespace()}, &infraCluster); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", infraCluster.GetKind()))
+func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, cluster capiv1beta2.Cluster, endpoint string, port int64, patchStatus bool) error {
+	infraCluster, err := r.getInfraClusterFromRef(ctx, cluster.Spec.InfrastructureRef, cluster.GetNamespace())
+	if err != nil {
+		return errors.Wrap(err, "cannot retrieve infrastructure cluster "+cluster.Spec.InfrastructureRef.Kind)
 	}
 
-	patchHelper, err := patch.NewHelper(&infraCluster, r.client)
+	patchHelper, err := patch.NewHelper(infraCluster, r.client)
 	if err != nil {
 		return errors.Wrap(err, "unable to create patch helper")
 	}
@@ -173,7 +190,7 @@ func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, 
 		}
 	}
 
-	if err = patchHelper.Patch(ctx, &infraCluster); err != nil {
+	if err = patchHelper.Patch(ctx, infraCluster); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("cannot perform PATCH update for the %s resource", infraCluster.GetKind()))
 	}
 
@@ -182,15 +199,10 @@ func (r *KamajiControlPlaneReconciler) patchGenericCluster(ctx context.Context, 
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=metal3clusters;metalstackclusters,verbs=get;list;watch
 
-func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
-	gkc := unstructured.Unstructured{}
-
-	gkc.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	gkc.SetName(cluster.Spec.InfrastructureRef.Name)
-	gkc.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
-
-	if err := r.client.Get(ctx, types.NamespacedName{Name: gkc.GetName(), Namespace: gkc.GetNamespace()}, &gkc); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", gkc.GetKind()))
+func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, cluster capiv1beta2.Cluster, endpoint string, port int64) error {
+	gkc, err := r.getInfraClusterFromRef(ctx, cluster.Spec.InfrastructureRef, cluster.GetNamespace())
+	if err != nil {
+		return errors.Wrap(err, "cannot retrieve infrastructure cluster "+cluster.Spec.InfrastructureRef.Kind)
 	}
 
 	cpHost, _, err := unstructured.NestedString(gkc.Object, "spec", "controlPlaneEndpoint", "host")
@@ -224,18 +236,13 @@ func (r *KamajiControlPlaneReconciler) checkGenericCluster(ctx context.Context, 
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=openstackclusters,verbs=patch;get;list;watch
 
-func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context, cluster capiv1beta1.Cluster, endpoint string, port int64) error {
-	osc := unstructured.Unstructured{}
-
-	osc.SetGroupVersionKind(cluster.Spec.InfrastructureRef.GroupVersionKind())
-	osc.SetName(cluster.Spec.InfrastructureRef.Name)
-	osc.SetNamespace(cluster.Spec.InfrastructureRef.Namespace)
-
-	if err := r.client.Get(ctx, types.NamespacedName{Name: osc.GetName(), Namespace: osc.GetNamespace()}, &osc); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("cannot retrieve the %s resource", osc.GetKind()))
+func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context, cluster capiv1beta2.Cluster, endpoint string, port int64) error {
+	osc, err := r.getInfraClusterFromRef(ctx, cluster.Spec.InfrastructureRef, cluster.GetNamespace())
+	if err != nil {
+		return errors.Wrap(err, "cannot retrieve infrastructure cluster "+cluster.Spec.InfrastructureRef.Kind)
 	}
 
-	patchHelper, err := patch.NewHelper(&osc, r.client)
+	patchHelper, err := patch.NewHelper(osc, r.client)
 	if err != nil {
 		return errors.Wrap(err, "unable to create patch helper")
 	}
@@ -248,7 +255,7 @@ func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context
 		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec apiServerPort", osc.GetKind()))
 	}
 
-	if err = patchHelper.Patch(ctx, &osc); err != nil {
+	if err = patchHelper.Patch(ctx, osc); err != nil {
 		return errors.Wrap(err, "cannot perform PATCH update for the OpenStackCluster resource")
 	}
 

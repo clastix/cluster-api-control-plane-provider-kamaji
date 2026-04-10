@@ -13,11 +13,11 @@ import (
 	"k8s.io/client-go/util/retry"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
+	"github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
 )
 
-func (r *KamajiControlPlaneReconciler) handleFinalizer(ctx context.Context, kcp *v1alpha1.KamajiControlPlane) error {
+func (r *KamajiControlPlaneReconciler) handleFinalizer(ctx context.Context, kcp *v1alpha2.KamajiControlPlane) error {
 	finalizers := sets.New[string](kcp.Finalizers...)
 	if !finalizers.Has(ExternalClusterReferenceFinalizer) {
 		err := retry.RetryOnConflict(retry.DefaultRetry, func() (scopedErr error) { //nolint:nonamedreturns
@@ -39,7 +39,7 @@ func (r *KamajiControlPlaneReconciler) handleFinalizer(ctx context.Context, kcp 
 	return nil
 }
 
-func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v1alpha1.KamajiControlPlane) error {
+func (r *KamajiControlPlaneReconciler) handleDeletion(ctx context.Context, kcp v1alpha2.KamajiControlPlane) error {
 	finalizers, log := sets.New[string](kcp.Finalizers...), ctrllog.FromContext(ctx)
 
 	if !finalizers.Has(ExternalClusterReferenceFinalizer) || kcp.Spec.Deployment.ExternalClusterReference == nil {

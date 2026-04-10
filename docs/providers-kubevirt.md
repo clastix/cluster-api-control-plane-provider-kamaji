@@ -31,7 +31,7 @@ spec:
       cidrBlocks:
       - 10.95.0.0/16
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
     kind: KamajiControlPlane
     name: capi-quickstart-kubevirt
     namespace: default
@@ -49,7 +49,7 @@ metadata:
   name: capi-quickstart
   namespace: default
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha2
 kind: KamajiControlPlane
 metadata:
   name: capi-quickstart-kubevirt
