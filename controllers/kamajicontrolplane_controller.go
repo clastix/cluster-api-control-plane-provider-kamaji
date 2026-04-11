@@ -129,6 +129,8 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 	// Extracting conditions, used to update the KamajiControlPlane ones upon the end of the reconciliation.
 	conditions := kcp.Status.Conditions
 
+	meta.RemoveStatusCondition(&conditions, string(kcpv1alpha2.PausedConditionType))
+
 	defer func() {
 		deferErr := r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
 			kcp.Status.Conditions = conditions
@@ -362,8 +364,6 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		Reason:             availableReason,
 		ObservedGeneration: kcp.Generation,
 	})
-
-	meta.RemoveStatusCondition(&conditions, string(kcpv1alpha2.PausedConditionType))
 
 	if err != nil {
 		if errors.Is(err, ErrEnqueueBack) {
