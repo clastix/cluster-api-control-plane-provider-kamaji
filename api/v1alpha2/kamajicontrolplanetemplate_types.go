@@ -14,6 +14,7 @@ type KamajiControlPlaneTemplateSpec struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:storageversion
 //+kubebuilder:resource:categories=cluster-api;kamaji,shortName=ktcpt
 
 // KamajiControlPlaneTemplate is the Schema for the kamajicontrolplanetemplates API.
