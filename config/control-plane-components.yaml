@@ -7105,6 +7105,26 @@ spec:
                         description: Defines the Gateway API namespace for the Gateway object.
                         minLength: 1
                         type: string
+                      port:
+                        description: |-
+                          Port selects the listener port on the target Gateway (mapped to
+                          ParentReference.Port of the generated TLSRoute). When unset, the first
+                          listener of the Gateway that accepts the Route is used. When set together
+                          with SectionName, both must match the target listener.
+                        format: int32
+                        maximum: 65535
+                        minimum: 1
+                        type: integer
+                      sectionName:
+                        description: |-
+                          SectionName selects a specific listener on the target Gateway for the
+                          kube-apiserver TLSRoute to attach to (mapped to ParentReference.SectionName
+                          of the generated TLSRoute). Required when the Gateway exposes multiple
+                          listeners: the upstream Kamaji controller needs it to resolve the
+                          Gateway listener when publishing the kube-apiserver access point status.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
                     required:
                     - hostname
                     - name
@@ -14648,6 +14668,26 @@ spec:
                                 type: string
                               namespace:
                                 description: Defines the Gateway API namespace for the Gateway object.
+                                minLength: 1
+                                type: string
+                              port:
+                                description: |-
+                                  Port selects the listener port on the target Gateway (mapped to
+                                  ParentReference.Port of the generated TLSRoute). When unset, the first
+                                  listener of the Gateway that accepts the Route is used. When set together
+                                  with SectionName, both must match the target listener.
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                              sectionName:
+                                description: |-
+                                  SectionName selects a specific listener on the target Gateway for the
+                                  kube-apiserver TLSRoute to attach to (mapped to ParentReference.SectionName
+                                  of the generated TLSRoute). Required when the Gateway exposes multiple
+                                  listeners: the upstream Kamaji controller needs it to resolve the
+                                  Gateway listener when publishing the kube-apiserver access point status.
+                                maxLength: 253
                                 minLength: 1
                                 type: string
                             required:

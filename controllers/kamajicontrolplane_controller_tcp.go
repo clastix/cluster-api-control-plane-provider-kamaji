@@ -161,7 +161,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 
 			tcp.Spec.NetworkProfile.CertSANs = kcp.Spec.Network.CertSANs
 			// GatewayAPI
-			if kcp.Spec.Network.Gateway != nil {
+			if kcp.Spec.Network.Gateway != nil { //nolint:nestif
 				// In the case of enabled gateway, adding the FQDN to the CertSANs
 				if tcp.Spec.NetworkProfile.CertSANs == nil {
 					tcp.Spec.NetworkProfile.CertSANs = []string{}
@@ -173,14 +173,19 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 					host = kcp.Spec.Network.Gateway.Hostname
 				}
 				tcp.Spec.NetworkProfile.CertSANs = append(tcp.Spec.NetworkProfile.CertSANs, host)
+				parentRef := gatewayv1.ParentReference{
+					Name:      gatewayv1.ObjectName(kcp.Spec.Network.Gateway.Name),
+					Namespace: ptr.To(gatewayv1.Namespace(kcp.Spec.Network.Gateway.Namespace)),
+				}
+				if sectionName := kcp.Spec.Network.Gateway.SectionName; sectionName != "" {
+					parentRef.SectionName = ptr.To(gatewayv1.SectionName(sectionName))
+				}
+				if port := kcp.Spec.Network.Gateway.Port; port != nil {
+					parentRef.Port = ptr.To(*port)
+				}
 				tcp.Spec.ControlPlane.Gateway = &kamajiv1alpha1.GatewaySpec{
-					Hostname: gatewayv1.Hostname(host),
-					GatewayParentRefs: []gatewayv1.ParentReference{
-						{
-							Name:      gatewayv1.ObjectName(kcp.Spec.Network.Gateway.Name),
-							Namespace: ptr.To(gatewayv1.Namespace(kcp.Spec.Network.Gateway.Namespace)),
-						},
-					},
+					Hostname:          gatewayv1.Hostname(host),
+					GatewayParentRefs: []gatewayv1.ParentReference{parentRef},
 					AdditionalMetadata: kamajiv1alpha1.AdditionalMetadata{
 						Labels:      kcp.Spec.Network.Gateway.ExtraLabels,
 						Annotations: kcp.Spec.Network.Gateway.ExtraAnnotations,
