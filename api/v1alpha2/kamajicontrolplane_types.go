@@ -45,6 +45,21 @@ type GatewayComponent struct {
 	// +kubebuilder:required
 	// +kubebuilder:validation:MinLength=1
 	Hostname string `json:"hostname"`
+	// SectionName selects a specific listener on the target Gateway for the
+	// kube-apiserver TLSRoute to attach to (mapped to ParentReference.SectionName
+	// of the generated TLSRoute). Required when the Gateway exposes multiple
+	// listeners: the upstream Kamaji controller needs it to resolve the
+	// Gateway listener when publishing the kube-apiserver access point status.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	SectionName string `json:"sectionName,omitempty"`
+	// Port selects the listener port on the target Gateway (mapped to
+	// ParentReference.Port of the generated TLSRoute). When unset, the first
+	// listener of the Gateway that accepts the Route is used. When set together
+	// with SectionName, both must match the target listener.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port *int32 `json:"port,omitempty"`
 	// Defines the extra labels for the Gateway object.
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Defines the extra annotations for the Gateway object.
