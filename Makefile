@@ -46,8 +46,12 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 	BUNDLE_GEN_FLAGS += --use-image-digests
 endif
 
-# Image URL to use all building/pushing image targets
-IMG ?= docker.io/clastix/cluster-api-control-plane-provider-kamaji:$(VERSION)
+# Container repository for ko builds
+CONTAINER_REPOSITORY ?= docker.io/clastix/cluster-api-control-plane-provider-kamaji
+
+# ko configuration
+KO_PUSH ?= false
+KO_LOCAL ?= true
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.25.0
 
@@ -113,7 +117,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 .PHONY: release
 release: manifests kustomize ## Create the single YAML manifest.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(CONTAINER_REPOSITORY):$(VERSION)
 	$(KUSTOMIZE) build config/default > config/control-plane-components.yaml
 
 ##@ Build
@@ -126,33 +130,10 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
-# If you wish built the manager image targeting other platforms you can use the --platform flag.
-# (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
-# More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-.PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
-
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-
-# PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
-# architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
-# - able to use docker buildx . More info: https://docs.docker.com/build/buildx/
-# - have enable BuildKit, More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-# - be able to push the image for your registry (i.e. if you do not inform a valid value via IMG=<myregistry/image:<tag>> than the export will fail)
-# To properly provided solutions that supports more than one platform you should use this option.
-PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
-.PHONY: docker-buildx
-docker-buildx: test ## Build and push docker image for the manager for cross-platform support
-	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
-	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
-	- docker buildx create --name project-v3-builder
-	docker buildx use project-v3-builder
-	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
-	- docker buildx rm project-v3-builder
-	rm Dockerfile.cross
+.PHONY: ko-build
+ko-build: $(KO) ## Build the container image using ko.
+	KOCACHE=/tmp/ko-cache KO_DOCKER_REPO=$(CONTAINER_REPOSITORY) \
+	$(KO) build ./ --bare --tags=$(VERSION) --local=$(KO_LOCAL) --push=$(KO_PUSH)
 
 ##@ Deployment
 
@@ -184,6 +165,7 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ## Tool Binaries
+KO ?= $(LOCALBIN)/ko
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
@@ -195,6 +177,11 @@ CONTROLLER_TOOLS_VERSION ?= v0.16.4
 GOLANGCI_LINT_VERSION ?= v2.0.2
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
+.PHONY: ko
+ko: $(KO) ## Download ko locally if necessary.
+$(KO): $(LOCALBIN)
+	test -s $(LOCALBIN)/ko || GOBIN=$(LOCALBIN) CGO_ENABLED=0 go install -ldflags="-s -w" github.com/google/ko@v0.18.1
+
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
@@ -228,7 +215,7 @@ bundle-build: ## Build the bundle image.
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
-	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
+	docker push $(BUNDLE_IMG)
 
 .PHONY: opm
 OPM = ./bin/opm
