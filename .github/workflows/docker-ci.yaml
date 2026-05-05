@@ -1,4 +1,4 @@
-name: docker-ci
+name: ko-build
 
 on:
   push:
@@ -9,54 +9,23 @@ permissions:
   contents: read
 
 jobs:
-  docker-ci:
+  ko:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: 'go.mod'
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
-        with:
-          images: |
-            docker.io/${{ github.repository }}
-          tags: |
-            type=semver,pattern={{raw}}
-          flavor: |
-            latest=false
 
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
-        with:
-          platforms: arm64,arm
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-        with:
-          install: true
-
-      - name: Inspect builder
-        run: |
-          echo "Name:      ${{ steps.buildx.outputs.name }}"
-          echo "Endpoint:  ${{ steps.buildx.outputs.endpoint }}"
-          echo "Status:    ${{ steps.buildx.outputs.status }}"
-          echo "Flags:     ${{ steps.buildx.outputs.flags }}"
-          echo "Platforms: ${{ steps.buildx.outputs.platforms }}"
+      - name: Install ko
+        run: make ko
 
       - name: Login to docker.io Container Registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          registry: docker.io
-          username: ${{ secrets.DOCKER_IO_USERNAME }}
-          password: ${{ secrets.DOCKER_IO_TOKEN }}
+        run: ./bin/ko login docker.io -u ${{ secrets.DOCKER_IO_USERNAME }} -p ${{ secrets.DOCKER_IO_TOKEN }}
 
       - name: Build and push
-        id: build-release
-        run: make VERSION=${{ github.ref_name }} docker-buildx
+        run: make VERSION=${{ github.ref_name }} KO_LOCAL=false KO_PUSH=true ko-build
