@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	controlplanev1alpha1 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha1"
 	controlplanev1alpha2 "github.com/clastix/cluster-api-control-plane-provider-kamaji/api/v1alpha2"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/controllers"
 	"github.com/clastix/cluster-api-control-plane-provider-kamaji/pkg/externalclusterreference"
@@ -44,6 +45,7 @@ func init() {
 	utilruntime.Must(capiv1beta2.AddToScheme(scheme))
 
 	utilruntime.Must(controlplanev1alpha2.AddToScheme(scheme))
+	utilruntime.Must(controlplanev1alpha1.AddToScheme(scheme))
 }
 
 //nolint:funlen,cyclop
@@ -154,6 +156,17 @@ func main() {
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
+
+	// Register the conversion webhook for KamajiControlPlane v1alpha1 ↔ v1alpha2.
+	if err = ctrl.NewWebhookManagedBy(mgr, &controlplanev1alpha2.KamajiControlPlane{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create conversion webhook", "webhook", "KamajiControlPlane")
+		os.Exit(1)
+	}
+
+	if err = ctrl.NewWebhookManagedBy(mgr, &controlplanev1alpha2.KamajiControlPlaneTemplate{}).Complete(); err != nil {
+		setupLog.Error(err, "unable to create conversion webhook", "webhook", "KamajiControlPlaneTemplate")
+		os.Exit(1)
+	}
 
 	if featureGate.Enabled(features.ExternalClusterReference) || featureGate.Enabled(features.ExternalClusterReferenceCrossNamespace) {
 		if err = indexers.SetupWithManager(ctx, mgr); err != nil {
