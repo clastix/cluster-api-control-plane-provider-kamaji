@@ -150,6 +150,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Service.ServiceType = kcp.Spec.Network.ServiceType
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Labels = kcp.Spec.Network.ServiceLabels
 			tcp.Spec.ControlPlane.Service.AdditionalMetadata.Annotations = kcp.Spec.Network.ServiceAnnotations
+			tcp.Spec.ControlPlane.Service.AdditionalPorts = kcp.Spec.Network.AdditionalServicePorts
 
 			for _, i := range kcp.Spec.Network.CertSANs {
 				// validating CertSANs as soon as possible to avoid github.com/clastix/kamaji/issues/679:
