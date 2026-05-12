@@ -606,6 +606,13 @@ func (in *NetworkComponent) DeepCopyInto(out *NetworkComponent) {
 			(*out)[key] = val
 		}
 	}
+	if in.AdditionalServicePorts != nil {
+		in, out := &in.AdditionalServicePorts, &out.AdditionalServicePorts
+		*out = make([]v1alpha1.AdditionalPort, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.CertSANs != nil {
 		in, out := &in.CertSANs, &out.CertSANs
 		*out = make([]string, len(*in))

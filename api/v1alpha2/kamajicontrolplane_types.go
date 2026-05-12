@@ -124,6 +124,11 @@ type NetworkComponent struct {
 	AdvertiseAddress   string            `json:"advertiseAddress,omitempty"`
 	ServiceLabels      map[string]string `json:"serviceLabels,omitempty"`
 	ServiceAnnotations map[string]string `json:"serviceAnnotations,omitempty"`
+	// AdditionalServicePorts adds extra ports to the Service that fronts the
+	// TenantControlPlane Pods. Useful when sidecars (such as a CSR signer)
+	// running alongside the kube-apiserver need to be reachable from tenant
+	// workers through the same Service endpoint.
+	AdditionalServicePorts []kamajiv1alpha1.AdditionalPort `json:"additionalServicePorts,omitempty"`
 	// Configure additional Subject Address Names for the kube-apiserver certificate,
 	// useful if the TenantControlPlane is going to be exposed behind a FQDN with NAT.
 	CertSANs []string `json:"certSANs,omitempty"` //nolint:tagliatelle
