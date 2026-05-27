@@ -7236,6 +7236,9 @@ spec:
                           type: string
                         type: array
                     type: object
+                    x-kubernetes-validations:
+                    - message: LoadBalancerClass cannot be set or unset at runtime
+                      rule: has(self.loadBalancerClass) == has(oldSelf.loadBalancerClass)
                   serviceAddress:
                     description: |-
                       This field can be used in case of pre-assigned address, such as a VIP,
@@ -7263,8 +7266,6 @@ spec:
                   rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == ''LoadBalancer'')'
                 - message: LoadBalancerClass is supported only with LoadBalancer service type
                   rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == ''LoadBalancer'''
-                - message: LoadBalancerClass cannot be set or unset at runtime
-                  rule: self.serviceType != 'LoadBalancer' || (oldSelf.serviceType != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig) && has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)
               registry:
                 default: registry.k8s.io
                 description: |-
@@ -14853,6 +14854,9 @@ spec:
                                   type: string
                                 type: array
                             type: object
+                            x-kubernetes-validations:
+                            - message: LoadBalancerClass cannot be set or unset at runtime
+                              rule: has(self.loadBalancerClass) == has(oldSelf.loadBalancerClass)
                           serviceAddress:
                             description: |-
                               This field can be used in case of pre-assigned address, such as a VIP,
@@ -14880,8 +14884,6 @@ spec:
                           rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == ''LoadBalancer'')'
                         - message: LoadBalancerClass is supported only with LoadBalancer service type
                           rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == ''LoadBalancer'''
-                        - message: LoadBalancerClass cannot be set or unset at runtime
-                          rule: self.serviceType != 'LoadBalancer' || (oldSelf.serviceType != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig) && has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)
                       registry:
                         default: registry.k8s.io
                         description: |-
