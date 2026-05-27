@@ -84,7 +84,6 @@ type IngressComponent struct {
 
 // LoadBalancerConfig is used when the KamajiControlPlane is exposed using a LoadBalancer service type.
 // +kubebuilder:validation:XValidation:rule="has(self.loadBalancerClass) == has(oldSelf.loadBalancerClass)",message="LoadBalancerClass cannot be set or unset at runtime"
-
 type LoadBalancerConfig struct {
 	// LoadBalancerSourceRanges restricts the IP ranges that can access
 	// the LoadBalancer type Service. This field defines a list of IP
