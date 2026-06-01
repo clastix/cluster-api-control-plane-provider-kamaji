@@ -295,7 +295,7 @@ func (r *KamajiControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.R
 		err = r.updateKamajiControlPlaneStatus(ctx, &kcp, func() {
 			kcp.Status.ReadyReplicas = ptr.To(tcp.Status.Kubernetes.Deployment.ReadyReplicas)
 			kcp.Status.Replicas = ptr.To(tcp.Status.Kubernetes.Deployment.Replicas)
-			kcp.Status.Selector = ptr.To(metav1.FormatLabelSelector(&metav1.LabelSelector{MatchLabels: kcp.GetLabels()}))
+			kcp.Status.Selector = ptr.To(tcp.Status.Kubernetes.Deployment.Selector)
 			kcp.Status.AvailableReplicas = ptr.To(tcp.Status.Kubernetes.Deployment.AvailableReplicas)
 			kcp.Status.UpToDateReplicas = ptr.To(tcp.Status.Kubernetes.Deployment.UpdatedReplicas)
 			kcp.Status.Version = tcp.Status.Kubernetes.Version.Version
