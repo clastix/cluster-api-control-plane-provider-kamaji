@@ -69,11 +69,11 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			}
 			// TenantControlPlane Services CIDR
 			if len(cluster.Spec.ClusterNetwork.Services.CIDRBlocks) > 0 {
-				tcp.Spec.NetworkProfile.ServiceCIDR = cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]
+				tcp.Spec.NetworkProfile.ServiceCIDRs = append([]string{}, cluster.Spec.ClusterNetwork.Services.CIDRBlocks...)
 			}
 			// TenantControlPlane Pods CIDR
 			if len(cluster.Spec.ClusterNetwork.Pods.CIDRBlocks) > 0 {
-				tcp.Spec.NetworkProfile.PodCIDR = cluster.Spec.ClusterNetwork.Pods.CIDRBlocks[0]
+				tcp.Spec.NetworkProfile.PodCIDRs = append([]string{}, cluster.Spec.ClusterNetwork.Pods.CIDRBlocks...)
 			}
 			// TenantControlPlane cluster domain
 			tcp.Spec.NetworkProfile.ClusterDomain = cluster.Spec.ClusterNetwork.ServiceDomain
