@@ -1,14 +1,14 @@
 // Copyright 2023 Clastix Labs
 // SPDX-License-Identifier: Apache-2.0
 
-package v1alpha2
+package v1alpha1
 
 import (
 	kamajiv1alpha1 "github.com/clastix/kamaji/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
 )
 
 // ControlPlaneComponent allows the customization for the given component of the control plane.
@@ -45,21 +45,6 @@ type GatewayComponent struct {
 	// +kubebuilder:required
 	// +kubebuilder:validation:MinLength=1
 	Hostname string `json:"hostname"`
-	// SectionName selects a specific listener on the target Gateway for the
-	// kube-apiserver TLSRoute to attach to (mapped to ParentReference.SectionName
-	// of the generated TLSRoute). Required when the Gateway exposes multiple
-	// listeners: the upstream Kamaji controller needs it to resolve the
-	// Gateway listener when publishing the kube-apiserver access point status.
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=253
-	SectionName string `json:"sectionName,omitempty"`
-	// Port selects the listener port on the target Gateway (mapped to
-	// ParentReference.Port of the generated TLSRoute). When unset, the first
-	// listener of the Gateway that accepts the Route is used. When set together
-	// with SectionName, both must match the target listener.
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=65535
-	Port *int32 `json:"port,omitempty"`
 	// Defines the extra labels for the Gateway object.
 	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
 	// Defines the extra annotations for the Gateway object.
@@ -83,7 +68,6 @@ type IngressComponent struct {
 }
 
 // LoadBalancerConfig is used when the KamajiControlPlane is exposed using a LoadBalancer service type.
-// +kubebuilder:validation:XValidation:rule="has(self.loadBalancerClass) == has(oldSelf.loadBalancerClass)",message="LoadBalancerClass cannot be set or unset at runtime"
 type LoadBalancerConfig struct {
 	// LoadBalancerSourceRanges restricts the IP ranges that can access
 	// the LoadBalancer type Service. This field defines a list of IP
@@ -102,6 +86,7 @@ type LoadBalancerConfig struct {
 
 // +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == 'LoadBalancer')", message="LoadBalancerSourceRanges are supported only with LoadBalancer service type"
 // +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == 'LoadBalancer'", message="LoadBalancerClass is supported only with LoadBalancer service type"
+// +kubebuilder:validation:XValidation:rule="self.serviceType != 'LoadBalancer' || (oldSelf.serviceType != 'LoadBalancer' && self.serviceType == 'LoadBalancer') || !has(self.loadBalancerConfig) || has(self.loadBalancerConfig) && has(self.loadBalancerConfig.loadBalancerClass) == has(oldSelf.loadBalancerConfig.loadBalancerClass)",message="LoadBalancerClass cannot be set or unset at runtime"
 
 type NetworkComponent struct {
 	// Optional configuration for the LoadBalancer service that exposes the Kamaji control plane.
@@ -124,11 +109,6 @@ type NetworkComponent struct {
 	AdvertiseAddress   string            `json:"advertiseAddress,omitempty"`
 	ServiceLabels      map[string]string `json:"serviceLabels,omitempty"`
 	ServiceAnnotations map[string]string `json:"serviceAnnotations,omitempty"`
-	// AdditionalServicePorts adds extra ports to the Service that fronts the
-	// TenantControlPlane Pods. Useful when sidecars (such as a CSR signer)
-	// running alongside the kube-apiserver need to be reachable from tenant
-	// workers through the same Service endpoint.
-	AdditionalServicePorts []kamajiv1alpha1.AdditionalPort `json:"additionalServicePorts,omitempty"`
 	// Configure additional Subject Address Names for the kube-apiserver certificate,
 	// useful if the TenantControlPlane is going to be exposed behind a FQDN with NAT.
 	CertSANs []string `json:"certSANs,omitempty"` //nolint:tagliatelle
@@ -156,7 +136,7 @@ type CoreDNSAddonSpec struct {
 type KamajiControlPlaneSpec struct {
 	KamajiControlPlaneFields `json:",inline"`
 	// ControlPlaneEndpoint propagates the endpoint the Kubernetes API Server managed by Kamaji is located.
-	ControlPlaneEndpoint capiv1beta2.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+	ControlPlaneEndpoint capiv1beta1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 	// Number of desired replicas for the given TenantControlPlane.
 	// Defaults to 2.
 	// +kubebuilder:default=2
@@ -249,62 +229,23 @@ type ExternalClusterReference struct {
 	DeploymentNamespace string `json:"deploymentNamespace"`
 }
 
-// KamajiControlPlaneInitializationStatus contains the initialization status of the KamajiControlPlane.
-type KamajiControlPlaneInitializationStatus struct {
-	// ControlPlaneInitialized is true when the control plane provider reports the control plane has been initialized.
-	// +optional
-	ControlPlaneInitialized *bool `json:"controlPlaneInitialized,omitempty"`
-}
-
-// GetControlPlaneInitialized returns the ControlPlaneInitialized field, nil-safe.
-func (s *KamajiControlPlaneInitializationStatus) GetControlPlaneInitialized() *bool {
-	if s == nil {
-		return nil
-	}
-
-	return s.ControlPlaneInitialized
-}
-
-// IsControlPlaneInitialized checks the v1beta2 initialization status.
-func (s *KamajiControlPlaneStatus) IsControlPlaneInitialized() bool {
-	if s.Initialization != nil && s.Initialization.ControlPlaneInitialized != nil {
-		return *s.Initialization.ControlPlaneInitialized
-	}
-
-	return false
-}
-
-// SetControlPlaneInitialized sets the ControlPlaneInitialized field, initializing the struct if needed.
-func (s *KamajiControlPlaneStatus) SetControlPlaneInitialized(value bool) {
-	if s.Initialization == nil {
-		s.Initialization = &KamajiControlPlaneInitializationStatus{}
-	}
-
-	s.Initialization.ControlPlaneInitialized = &value
-}
-
 // KamajiControlPlaneStatus defines the observed state of KamajiControlPlane.
 type KamajiControlPlaneStatus struct {
-	// Initialization contains the initialization status of the KamajiControlPlane.
-	// +optional
-	Initialization *KamajiControlPlaneInitializationStatus `json:"initialization,omitempty"`
+	// The TenantControlPlane has completed initialization.
+	Initialized bool `json:"initialized"`
 	// The Kamaji Control Plane is ready to link Cluster API with the Tenant Control Plane.
 	Ready bool `json:"ready"`
 
 	// Total number of fully running and ready control plane instances.
-	// +optional
-	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
+	ReadyReplicas int32 `json:"readyReplicas"`
 	// Total number of non-terminated control plane instances.
-	// +optional
-	Replicas *int32 `json:"replicas,omitempty"`
-	// +optional
-	Selector *string `json:"selector,omitempty"`
-	// Total number of available control plane instances targeted by this control plane.
-	// +optional
-	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
+	Replicas int32  `json:"replicas"`
+	Selector string `json:"selector"`
+	// Total number of unavailable TenantControlPlane instances targeted by this control plane,
+	// equal to the desired number of control plane instances - ready instances.
+	UnavailableReplicas int32 `json:"unavailableReplicas"`
 	// Total number of non-terminated Pods targeted by this control plane that have the desired template spec.
-	// +optional
-	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
+	UpdatedReplicas int32 `json:"updatedReplicas"`
 	// ExternalManagedControlPlane indicates to Cluster API that the Control Plane
 	// is externally managed by Kamaji.
 	// +kubebuilder:default=true
@@ -319,12 +260,11 @@ type KamajiControlPlaneStatus struct {
 }
 
 //+kubebuilder:object:root=true
-//+kubebuilder:storageversion
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:categories=cluster-api;kamaji,shortName=ktcp
 //+kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 //+kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The desired Kubernetes version"
-//+kubebuilder:printcolumn:name="Initialized",type="boolean",JSONPath=".status.initialization.controlPlaneInitialized",description="Check if the Kamaji Control Plane has been initialized"
+//+kubebuilder:printcolumn:name="Initialized",type="boolean",JSONPath=".status.initialized",description="Check if the Kamaji Control Plane has been initialized"
 //+kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready",description="Check if the Kamaji Control Plane is up and running"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
 
