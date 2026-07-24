@@ -5,6 +5,7 @@ package v1alpha2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
@@ -34,7 +35,15 @@ type KamajiControlPlaneTemplateList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&KamajiControlPlaneTemplate{}, &KamajiControlPlaneTemplateList{})
+	SchemeBuilder.Register(func(s *runtime.Scheme) error {
+		s.AddKnownTypes(
+			GroupVersion,
+			&KamajiControlPlaneTemplate{},
+			&KamajiControlPlaneTemplateList{},
+		)
+
+		return nil
+	})
 }
 
 // KamajiControlPlaneTemplateResource describes the data needed to create a KamajiControlPlane from a template.
