@@ -94,7 +94,7 @@ jobs:
 
           helm repo add clastix https://clastix.github.io/charts
           helm repo update
-          helm install kamaji clastix/kamaji -n kamaji-system --create-namespace --debug \
+          helm install kamaji clastix/kamaji --version "0.0.0+latest" -n kamaji-system --create-namespace --debug \
             --set 'resources=null' --timeout=10m
 
       - name: "Setup clusterctl config"
