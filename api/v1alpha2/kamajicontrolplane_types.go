@@ -8,6 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	capiv1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
@@ -346,5 +347,13 @@ type KamajiControlPlaneList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&KamajiControlPlane{}, &KamajiControlPlaneList{})
+	SchemeBuilder.Register(func(s *runtime.Scheme) error {
+		s.AddKnownTypes(
+			GroupVersion,
+			&KamajiControlPlane{},
+			&KamajiControlPlaneList{},
+		)
+
+		return nil
+	})
 }
