@@ -7,10 +7,10 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - 10.243.0.0/16
+        - 10.243.0.0/16
     services:
       cidrBlocks:
-      - 10.10.0.0/16
+        - 10.10.0.0/16
   controlPlaneRef:
     apiGroup: controlplane.cluster.x-k8s.io
     kind: KamajiControlPlane
@@ -39,14 +39,22 @@ spec:
     coreDNS:
       dnsServiceIPs:
         - 10.10.0.10
-    kubeProxy: { }
+    kubeProxy: {}
   kubelet:
-    cgroupfs: systemd
+    configurationJSONPatches:
+      - op: add
+        path: /featureGates
+        value:
+          KubeletCrashLoopBackOffMax: false
+          KubeletEnsureSecretPulledImages: false
+      - op: add
+        path: /cgroupDriver
+        value: systemd
     preferredAddressTypes:
-    - InternalIP
-    - ExternalIP
+      - InternalIP
+      - ExternalIP
   network:
     serviceType: LoadBalancer
   deployment:
   replicas: 1
-  version: 1.23.10
+  version: 1.34.1
