@@ -13,3 +13,6 @@ resources:
 # as well as to read the instance statuses.
 - capi_role.yaml
 - capi_role_binding.yaml
+# Since Cluster API v1.14.0 the kubeadm bootstrap controller reads the
+# KamajiControlPlane to resolve the control-plane version (upstream #13433).
+- capi_kubeadm_bootstrap_role_binding.yaml
