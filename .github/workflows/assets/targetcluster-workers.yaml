@@ -29,7 +29,7 @@ spec:
               evictionStrategy: External
               volumes:
                 - containerDisk:
-                    image: quay.io/capk/ubuntu-2004-container-disk:v1.34.1
+                    image: quay.io/capk/ubuntu-2404-container-disk:v1.34.1
                   name: containervolume
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
@@ -66,4 +66,4 @@ spec:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: KubevirtMachineTemplate
         name: capi-quickstart-md-0
-      version: v1.23.10
+      version: v1.34.1
