@@ -47,6 +47,10 @@ spec:
         value:
           KubeletCrashLoopBackOffMax: false
           KubeletEnsureSecretPulledImages: false
+      - op: remove
+        path: /crashLoopBackOff/maxContainerRestartPeriod
+      - op: remove
+        path: /imagePullCredentialsVerificationPolicy
       - op: add
         path: /cgroupDriver
         value: systemd
