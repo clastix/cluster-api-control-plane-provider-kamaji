@@ -7649,6 +7649,15 @@ spec:
                       cluster-cache, while this address is used for kubeadm ControlPlaneEndpoint and cluster-info.
                       Both addresses are included in the API server certificate SANs.
                     type: string
+                  allocateLoadBalancerNodePorts:
+                    description: |-
+                      AllocateLoadBalancerNodePorts defines whether NodePorts are automatically allocated for
+                      the Service exposing the Tenant Control Plane when serviceType is LoadBalancer.
+                      It maps directly to the Service's spec.allocateLoadBalancerNodePorts. When nil, the
+                      Kubernetes default (true) applies, preserving existing behaviour. Set to false to expose
+                      the Tenant Control Plane only via the LoadBalancer IP and ClusterIP, without a per-node
+                      NodePort. This field is supported only when serviceType is LoadBalancer.
+                    type: boolean
                   certSANs:
                     description: |-
                       Configure additional Subject Address Names for the kube-apiserver certificate,
@@ -7813,6 +7822,10 @@ spec:
                     type
                   rule: '!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass)
                     || self.serviceType == ''LoadBalancer'''
+                - message: AllocateLoadBalancerNodePorts is supported only with LoadBalancer
+                    service type
+                  rule: '!has(self.allocateLoadBalancerNodePorts) || self.serviceType
+                    == ''LoadBalancer'''
               registry:
                 default: registry.k8s.io
                 description: |-
