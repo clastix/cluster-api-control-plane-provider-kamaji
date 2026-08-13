@@ -13,7 +13,9 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: capi-kamaji-control-plane-role
+# The ServiceAccount name/namespace default to the values used when the CAPI
+# Kubeadm Bootstrap provider is installed via `clusterctl init`.
 subjects:
   - kind: ServiceAccount
-    name: capi-kubeadm-bootstrap-manager
-    namespace: capi-kubeadm-bootstrap-system
+    name: ${CACPPK_KUBEADM_BOOTSTRAP_SA_NAME:=capi-kubeadm-bootstrap-manager}
+    namespace: ${CACPPK_KUBEADM_BOOTSTRAP_SA_NAMESPACE:=capi-kubeadm-bootstrap-system}
