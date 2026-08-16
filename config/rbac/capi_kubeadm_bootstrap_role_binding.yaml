@@ -16,6 +16,6 @@ roleRef:
 # The ServiceAccount name/namespace default to the values used when the CAPI
 # Kubeadm Bootstrap provider is installed via `clusterctl init`.
 subjects:
-  - kind: ServiceAccount
-    name: ${CACPPK_KUBEADM_BOOTSTRAP_SA_NAME:=capi-kubeadm-bootstrap-manager}
-    namespace: ${CACPPK_KUBEADM_BOOTSTRAP_SA_NAMESPACE:=capi-kubeadm-bootstrap-system}
+- kind: User
+  apiGroup: rbac.authorization.k8s.io
+  name: system:serviceaccount:${CACPPK_KUBEADM_BOOTSTRAP_SA_NAMESPACE:=capi-kubeadm-bootstrap-system}:${CACPPK_KUBEADM_BOOTSTRAP_SA_NAME:=capi-kubeadm-bootstrap-manager}

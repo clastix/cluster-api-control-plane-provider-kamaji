@@ -15731,9 +15731,9 @@ roleRef:
   kind: ClusterRole
   name: capi-kamaji-capi-kamaji-control-plane-role
 subjects:
-- kind: ServiceAccount
-  name: ${CACPPK_KUBEADM_BOOTSTRAP_SA_NAME:=capi-kubeadm-bootstrap-manager}
-  namespace: ${CACPPK_KUBEADM_BOOTSTRAP_SA_NAMESPACE:=capi-kubeadm-bootstrap-system}
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:serviceaccount:${CACPPK_KUBEADM_BOOTSTRAP_SA_NAMESPACE:=capi-kubeadm-bootstrap-system}:${CACPPK_KUBEADM_BOOTSTRAP_SA_NAME:=capi-kubeadm-bootstrap-manager}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
