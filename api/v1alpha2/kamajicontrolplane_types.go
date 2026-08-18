@@ -102,6 +102,7 @@ type LoadBalancerConfig struct {
 
 // +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerSourceRanges) || (size(self.loadBalancerConfig.loadBalancerSourceRanges) == 0 || self.serviceType == 'LoadBalancer')", message="LoadBalancerSourceRanges are supported only with LoadBalancer service type"
 // +kubebuilder:validation:XValidation:rule="!has(self.loadBalancerConfig) || !has(self.loadBalancerConfig.loadBalancerClass) || self.serviceType == 'LoadBalancer'", message="LoadBalancerClass is supported only with LoadBalancer service type"
+// +kubebuilder:validation:XValidation:rule="!has(self.allocateLoadBalancerNodePorts) || self.serviceType == 'LoadBalancer'", message="AllocateLoadBalancerNodePorts is supported only with LoadBalancer service type"
 
 type NetworkComponent struct {
 	// Optional configuration for the LoadBalancer service that exposes the Kamaji control plane.
@@ -114,6 +115,14 @@ type NetworkComponent struct {
 	Ingress *IngressComponent `json:"ingress,omitempty"`
 	// +kubebuilder:default="LoadBalancer"
 	ServiceType kamajiv1alpha1.ServiceType `json:"serviceType,omitempty"`
+	// AllocateLoadBalancerNodePorts defines whether NodePorts are automatically allocated for
+	// the Service exposing the Tenant Control Plane when serviceType is LoadBalancer.
+	// It maps directly to the Service's spec.allocateLoadBalancerNodePorts. When nil, the
+	// Kubernetes default (true) applies, preserving existing behaviour. Set to false to expose
+	// the Tenant Control Plane only via the LoadBalancer IP and ClusterIP, without a per-node
+	// NodePort. This field is supported only when serviceType is LoadBalancer.
+	// +optional
+	AllocateLoadBalancerNodePorts *bool `json:"allocateLoadBalancerNodePorts,omitempty"`
 	// This field can be used in case of pre-assigned address, such as a VIP,
 	// helping when serviceType is NodePort.
 	ServiceAddress string `json:"serviceAddress,omitempty"`
