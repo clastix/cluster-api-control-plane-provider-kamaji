@@ -35,6 +35,7 @@ The Kamaji Cluster API Control Plane provider documentation is referenced in the
 | [metal-stack](https://github.com/metal-stack/cluster-api-provider-metal-stack) ([technical considerations](docs/providers-metal-stack.md))    | += 0.8.0          |
 | [Nutanix](https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix) ([technical considerations](docs/providers-nutanix.md))       | += 1.2.4          |
 | [OpenStack](https://github.com/kubernetes-sigs/cluster-api-provider-openstack) ([technical considerations](docs/providers-openstack.md))      | += 0.8.0          |
+| [OUTSCALE](https://github.com/outscale/cluster-api-provider-outscale) ([technical considerations](docs/providers-osc.md))                     | += v1.2.0         |
 | [Tinkerbell](https://github.com/tinkerbell/cluster-api-provider-tinkerbell) ([technical considerations](docs/providers-tinkerbell.md))        | += v0.5.2         |
 | [vSphere](https://github.com/kubernetes-sigs/cluster-api-provider-vsphere) ([technical considerations](docs/providers-vsphere.md))            | += 1.7.0          |
 | [IONOS Cloud](https://github.com/ionos-cloud/cluster-api-provider-ionoscloud) ([technical considerations](docs/providers-ionoscloud.md))      | += v0.3.0         |

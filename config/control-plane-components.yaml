@@ -15655,6 +15655,7 @@ rules:
   - kubevirtclusters
   - nutanixclusters
   - openstackclusters
+  - oscclusters
   - packetclusters
   - proxmoxclusters
   - tinkerbellclusters
