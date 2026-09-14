@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/clastix/kamaji v1.0.1-0.20260703150601-b99609a435e7
-	github.com/onsi/ginkgo/v2 v2.32.0
+	github.com/onsi/ginkgo/v2 v2.32.2
 	github.com/onsi/gomega v1.43.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.10
