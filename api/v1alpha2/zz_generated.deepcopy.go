@@ -592,6 +592,11 @@ func (in *NetworkComponent) DeepCopyInto(out *NetworkComponent) {
 		*out = new(IngressComponent)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AllocateLoadBalancerNodePorts != nil {
+		in, out := &in.AllocateLoadBalancerNodePorts, &out.AllocateLoadBalancerNodePorts
+		*out = new(bool)
+		**out = **in
+	}
 	if in.ServiceLabels != nil {
 		in, out := &in.ServiceLabels, &out.ServiceLabels
 		*out = make(map[string]string, len(*in))
