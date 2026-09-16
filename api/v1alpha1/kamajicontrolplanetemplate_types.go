@@ -1,12 +1,11 @@
 // Copyright 2023 Clastix Labs
 // SPDX-License-Identifier: Apache-2.0
 
-package v1alpha2
+package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck,nolintlint // TODO: migrate to v1beta2
 )
 
 // KamajiControlPlaneTemplateSpec defines the desired state of KamajiControlPlaneTemplate.
@@ -15,7 +14,6 @@ type KamajiControlPlaneTemplateSpec struct {
 }
 
 //+kubebuilder:object:root=true
-//+kubebuilder:storageversion
 //+kubebuilder:resource:categories=cluster-api;kamaji,shortName=ktcpt
 
 // KamajiControlPlaneTemplate is the Schema for the kamajicontrolplanetemplates API.
@@ -36,15 +34,7 @@ type KamajiControlPlaneTemplateList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(func(s *runtime.Scheme) error {
-		s.AddKnownTypes(
-			GroupVersion,
-			&KamajiControlPlaneTemplate{},
-			&KamajiControlPlaneTemplateList{},
-		)
-
-		return nil
-	})
+	SchemeBuilder.Register(&KamajiControlPlaneTemplate{}, &KamajiControlPlaneTemplateList{})
 }
 
 // KamajiControlPlaneTemplateResource describes the data needed to create a KamajiControlPlane from a template.
