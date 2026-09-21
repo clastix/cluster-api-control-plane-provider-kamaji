@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	github.com/clastix/kamaji v1.0.1-0.20260912081835-0ac808bf990a
 	github.com/onsi/ginkgo/v2 v2.32.2
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/gomega v1.43.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.10
 	k8s.io/api v0.37.0
