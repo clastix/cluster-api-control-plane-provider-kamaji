@@ -166,7 +166,7 @@ type CoreDNSAddonSpec struct {
 type KamajiControlPlaneSpec struct {
 	KamajiControlPlaneFields `json:",inline"`
 	// ControlPlaneEndpoint propagates the endpoint the Kubernetes API Server managed by Kamaji is located.
-	ControlPlaneEndpoint capiv1beta2.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
+	ControlPlaneEndpoint capiv1beta2.APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
 	// Number of desired replicas for the given TenantControlPlane.
 	// Defaults to 2.
 	// +kubebuilder:default=2
