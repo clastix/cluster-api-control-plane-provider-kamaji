@@ -246,24 +246,7 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.AdditionalContainers = kcp.Spec.Deployment.ExtraContainers
 			tcp.Spec.ControlPlane.Deployment.AdditionalVolumes = kcp.Spec.Deployment.ExtraVolumes
 
-			if kcp.Spec.Deployment.Probes == nil ||
-				kcp.Spec.ApiServer.Probes == nil ||
-				kcp.Spec.ControllerManager.Probes == nil ||
-				kcp.Spec.Scheduler.Probes == nil {
-				tcp.Spec.ControlPlane.Deployment.Probes = nil
-			} else {
-				tcp.Spec.ControlPlane.Deployment.Probes = &kamajiv1alpha1.ControlPlaneProbes{
-					APIServer:         kcp.Spec.ApiServer.Probes,
-					ControllerManager: kcp.Spec.ControllerManager.Probes,
-					Scheduler:         kcp.Spec.Scheduler.Probes,
-				}
-
-				if kcp.Spec.Deployment.Probes != nil {
-					tcp.Spec.ControlPlane.Deployment.Probes.Liveness = kcp.Spec.Deployment.Probes.Liveness
-					tcp.Spec.ControlPlane.Deployment.Probes.Readiness = kcp.Spec.Deployment.Probes.Readiness
-					tcp.Spec.ControlPlane.Deployment.Probes.Startup = kcp.Spec.Deployment.Probes.Startup
-				}
-			}
+			tcp.Spec.ControlPlane.Deployment.Probes = controlPlaneProbes(kcp)
 
 			if !isDelegatedExternally {
 				return controllerutil.SetControllerReference(&kcp, tcp, k8sClient.Scheme())
@@ -279,4 +262,29 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 	}
 
 	return tcp, nil
+}
+
+// controlPlaneProbes maps the KamajiControlPlane probes to the TenantControlPlane ones:
+// the Deployment probes are the global defaults, the component ones are optional overrides.
+func controlPlaneProbes(kcp kcpv1alpha2.KamajiControlPlane) *kamajiv1alpha1.ControlPlaneProbes {
+	if kcp.Spec.Deployment.Probes == nil &&
+		kcp.Spec.ApiServer.Probes == nil &&
+		kcp.Spec.ControllerManager.Probes == nil &&
+		kcp.Spec.Scheduler.Probes == nil {
+		return nil
+	}
+
+	probes := &kamajiv1alpha1.ControlPlaneProbes{
+		APIServer:         kcp.Spec.ApiServer.Probes,
+		ControllerManager: kcp.Spec.ControllerManager.Probes,
+		Scheduler:         kcp.Spec.Scheduler.Probes,
+	}
+
+	if kcp.Spec.Deployment.Probes != nil {
+		probes.Liveness = kcp.Spec.Deployment.Probes.Liveness
+		probes.Readiness = kcp.Spec.Deployment.Probes.Readiness
+		probes.Startup = kcp.Spec.Deployment.Probes.Startup
+	}
+
+	return probes
 }
