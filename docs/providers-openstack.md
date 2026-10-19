@@ -200,6 +200,14 @@ Once applying the `OpenStackCluster` manifest, pay attention to performing these
   disableExternalNetwork: true
   apiServerFixedIP: ""
 ```
+- Starting from CAPO [v0.15.0](https://github.com/kubernetes-sigs/cluster-api-provider-openstack/releases/tag/v0.15.0), the `infrastructure.cluster.x-k8s.io/v1beta2` API version moved these fields under `spec.apiServer`:
+  Kamaji detects the served API version and updates `spec.apiServer.fixedIP` and `spec.apiServer.port` accordingly.
+  The load balancer is disabled by omitting `spec.apiServer.managedLoadBalancer`.
+```yaml
+  apiServer:
+    enableFloatingIP: false
+  enableExternalNetwork: false
+```
 - security group rules need to be added for CNI such as Calico if you need.
 ```yaml
 managedSecurityGroups:
