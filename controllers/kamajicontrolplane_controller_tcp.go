@@ -245,6 +245,8 @@ func (r *KamajiControlPlaneReconciler) createOrUpdateTenantControlPlane(ctx cont
 			tcp.Spec.ControlPlane.Deployment.AdditionalInitContainers = kcp.Spec.Deployment.ExtraInitContainers
 			tcp.Spec.ControlPlane.Deployment.AdditionalContainers = kcp.Spec.Deployment.ExtraContainers
 			tcp.Spec.ControlPlane.Deployment.AdditionalVolumes = kcp.Spec.Deployment.ExtraVolumes
+			tcp.Spec.ControlPlane.Deployment.ContainerSecurityContexts = kcp.Spec.Deployment.ContainerSecurityContexts
+			tcp.Spec.ControlPlane.Deployment.PodSecurityContext = kcp.Spec.Deployment.PodSecurityContext
 
 			tcp.Spec.ControlPlane.Deployment.Probes = controlPlaneProbes(kcp)
 

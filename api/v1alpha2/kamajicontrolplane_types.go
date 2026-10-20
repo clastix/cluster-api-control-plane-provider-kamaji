@@ -200,6 +200,10 @@ type DeploymentComponent struct {
 	// Global probe settings (Liveness, Readiness, Startup) apply to all components.
 	// Control Plane Component customisation has priority over these.
 	Probes *kamajiv1alpha1.ProbeSet `json:"probes,omitempty"`
+	// ContainerSecurityContexts allows to specify the security context for the individual control plane components.
+	ContainerSecurityContexts *kamajiv1alpha1.ControlPlaneContainerSecurityContexts `json:"containerSecurityContexts,omitempty"`
+	// PodSecurityContext allows to specify the security context for the control plane pod.
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 }
 
 type KamajiControlPlaneFields struct {
