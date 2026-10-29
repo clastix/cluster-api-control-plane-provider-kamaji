@@ -249,16 +249,33 @@ func (r *KamajiControlPlaneReconciler) patchOpenStackCluster(ctx context.Context
 		return errors.Wrap(err, "unable to create patch helper")
 	}
 
-	if err = unstructured.SetNestedField(osc.Object, endpoint, "spec", "apiServerFixedIP"); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec apiServerFixedIP", osc.GetKind()))
-	}
-
-	if err = unstructured.SetNestedField(osc.Object, port, "spec", "apiServerPort"); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s spec apiServerPort", osc.GetKind()))
+	if err = setOpenStackClusterAPIServer(osc, endpoint, port); err != nil {
+		return err
 	}
 
 	if err = patchHelper.Patch(ctx, osc); err != nil {
 		return errors.Wrap(err, "cannot perform PATCH update for the OpenStackCluster resource")
+	}
+
+	return nil
+}
+
+// setOpenStackClusterAPIServer sets the API server fixed IP and port according to the
+// OpenStackCluster API version resolved by the RESTMapper: starting from CAPO v0.15.0,
+// v1beta2 moved them from spec.apiServerFixedIP and spec.apiServerPort to spec.apiServer.
+func setOpenStackClusterAPIServer(osc *unstructured.Unstructured, endpoint string, port int64) error {
+	fixedIPFields, portFields := []string{"spec", "apiServerFixedIP"}, []string{"spec", "apiServerPort"}
+
+	if osc.GroupVersionKind().Version == "v1beta2" {
+		fixedIPFields, portFields = []string{"spec", "apiServer", "fixedIP"}, []string{"spec", "apiServer", "port"}
+	}
+
+	if err := unstructured.SetNestedField(osc.Object, endpoint, fixedIPFields...); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s %s", osc.GetKind(), strings.Join(fixedIPFields, ".")))
+	}
+
+	if err := unstructured.SetNestedField(osc.Object, port, portFields...); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to set unstructured %s %s", osc.GetKind(), strings.Join(portFields, ".")))
 	}
 
 	return nil
