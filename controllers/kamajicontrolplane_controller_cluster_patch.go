@@ -117,6 +117,8 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
 	case "AzureCluster":
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
+	case "Beskar7Cluster":
+		return r.checkOrPatchGenericCluster(ctx, cluster, endpoint, port)
 	case "HetznerCluster":
 		return r.patchGenericCluster(ctx, cluster, endpoint, port, false)
 	case "IonosCloudCluster":
@@ -150,8 +152,8 @@ func (r *KamajiControlPlaneReconciler) patchCluster(ctx context.Context, cluster
 	}
 }
 
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=proxmoxclusters;vsphereclusters;tinkerbellclusters,verbs=get;list;watch
-//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=proxmoxclusters;vsphereclusters;tinkerbellclusters,verbs=patch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=beskar7clusters;proxmoxclusters;vsphereclusters;tinkerbellclusters,verbs=get;list;watch
+//+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=beskar7clusters;proxmoxclusters;vsphereclusters;tinkerbellclusters,verbs=patch
 
 func (r *KamajiControlPlaneReconciler) checkOrPatchGenericCluster(ctx context.Context, cluster capiv1beta2.Cluster, endpoint string, port int64) error {
 	if err := r.checkGenericCluster(ctx, cluster, endpoint, port); err != nil {
