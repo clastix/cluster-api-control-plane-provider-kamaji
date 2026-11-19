@@ -4,7 +4,7 @@ The Kamaji Control Plane provider allows creating a _Beskar7_ backed bare-metal 
 
 ## Control Plane endpoint
 
-The [Cluster API Provider Beskar7](https://github.com/projectbeskar/beskar7) version must be `>= v0.9.0`.
+The [Cluster API Provider Beskar7](https://github.com/beskar7/beskar7) version must be `>= v0.9.0`.
 
 Beskar7 never discovers a Control Plane endpoint, it reads it from `Cluster.spec.controlPlaneEndpoint` or `Beskar7Cluster.spec.controlPlaneEndpoint`.
 
